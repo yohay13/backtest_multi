@@ -1,16 +1,83 @@
-# This is a sample Python script.
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import pandas as pd
+import numpy as np
+from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directory
+from strategies import calculate_exits_column_by_atr_and_prev_max_min
+from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
+    get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr
+from signals import indicators_mid_levels_signal
 
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+tickers = get_sp500_list()
+
+adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK' and elem != 'HLT' and elem != 'DD' and elem != 'CMCSA' and elem != 'COG' and elem != 'WBA' and elem != 'KMX' and elem != 'ADP' and elem != 'STZ' and elem != 'IQV'] # there were stock splits
+adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
+# adjusted_tickers = ['WBA', 'KMX', 'ADP', 'STZ', 'IQV']
+# adjusted_tickers = adjusted_tickers[300:500] # in the middle - missing
+# adjusted_tickers = adjusted_tickers[:50] # from beginning
+
+# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+
+stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# adjusted_tickers = ['AAPL']
+all_stocks_data_df = pd.DataFrame()
+all_stocks_data_df['ticker'] = adjusted_tickers
+
+for ticker in adjusted_tickers:
+    stocks_dict[ticker]['10_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 10)
+    stocks_dict[ticker]['atr'] = get_ATR_column_for_stock(stocks_dict[ticker], 14)
+    stocks_dict[ticker]['distance_from_10_ma'] = get_distance_between_columns_for_stock(stocks_dict[ticker], 'Close', '10_ma')
+    stocks_dict[ticker]['adx'], stocks_dict[ticker]['+di'], stocks_dict[ticker]['-di'] = get_adx_column_for_stock(stocks_dict[ticker], 14)
+    stocks_dict[ticker]['rsi'] = rsi(stocks_dict[ticker], 14)
+    stocks_dict[ticker]['stochastic_k'], stocks_dict[ticker]['stochastic_d'] = stochastic(stocks_dict[ticker], 14, 3)
+    stocks_dict[ticker]['atr_volatility'], stocks_dict[ticker]['atr_volatility_ma'] = get_volatility_from_atr(stocks_dict[ticker], 14)
+    stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 50)
+    stocks_dict[ticker]['indicators_mid_levels'], stocks_dict[ticker]['indicators_mid_levels_zone'] = indicators_mid_levels_signal(stocks_dict[ticker])
+    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 'indicators_mid_levels_zone', 14)
+    stocks_dict[ticker] = stocks_dict[ticker].reset_index()
+    stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
+
+# add data to some whole stocks data df
+all_stocks_data_df['average_action_p_l'] = ''
+all_stocks_data_df['median_action_p_l'] = ''
+all_stocks_data_df['min_action_p_l'] = ''
+all_stocks_data_df['max_action_p_l'] = ''
+all_stocks_data_df['total_p_l'] = ''
+all_stocks_data_df['total_correct_actions'] = ''
+all_stocks_data_df['total_wrong_actions'] = ''
+all_stocks_data_df['total_actions'] = ''
+all_stocks_data_df['total_periods'] = ''
+all_stocks_data_df['pct_actions'] = ''
+all_stocks_data_df['pct_correct_actions'] = ''
+for index, ticker in enumerate(adjusted_tickers):
+    all_stocks_data_df['average_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).mean()
+    all_stocks_data_df['median_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).median()
+    all_stocks_data_df['min_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).min()
+    all_stocks_data_df['max_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).max()
+    temp_series_cumprod = (1 + stocks_dict[ticker]['action_return'].replace('', np.nan)).cumprod()
+    if temp_series_cumprod.dropna().empty:
+        all_stocks_data_df['total_p_l'][index] = 0
+    else:
+        all_stocks_data_df['total_p_l'][index] = temp_series_cumprod.dropna().iloc[-1] - 1
+    all_stocks_data_df['total_correct_actions'][index] = stocks_dict[ticker]['action_return'][stocks_dict[ticker]['action_return'].replace('', np.nan) > 0].count()
+    all_stocks_data_df['total_wrong_actions'][index] = stocks_dict[ticker]['action_return'][stocks_dict[ticker]['action_return'].replace('', np.nan) < 0].count()
+    all_stocks_data_df['total_actions'][index] = all_stocks_data_df['total_correct_actions'][index] + all_stocks_data_df['total_wrong_actions'][index]
+    all_stocks_data_df['total_periods'][index] = len(stocks_dict[ticker])
+    all_stocks_data_df['pct_actions'][index] = all_stocks_data_df['total_actions'][index] / len(stocks_dict[ticker])
+    all_stocks_data_df['pct_correct_actions'][index] = all_stocks_data_df['total_correct_actions'][index] / all_stocks_data_df['total_actions'][index]
+all_stocks_data_df.to_csv(f'stocks_csvs_new/all_stocks_data.csv', index=False)
+
+all_actions_df = pd.DataFrame()
+for index, ticker in enumerate(adjusted_tickers):
+    current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] != '']
+    current_actions_df['ticker'] = ticker
+    current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] != '']
+    if index == 0:
+        all_actions_df = current_actions_df
+    else:
+        all_actions_df = pd.concat([all_actions_df, current_actions_df])
+
+all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
+finish = 1
