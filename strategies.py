@@ -106,10 +106,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'positive', 5):
                     df['entry_price'][i] = df['Close'][i]
                     if df[signal_type_column_name][i] == 'parabolic_trend':
-                        df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
-                                                            df['entry_price'][i] + df['atr'][i])
-                        df['current_stop_loss'][i] = min(df['Low'].rolling(prev_max_min_periods).min()[i],
-                                                         df['entry_price'][i] - df['atr'][i])
+                        df['current_profit_taker'][i] = (df['10_ma'][i] - df['entry_price'][i]) / 2
+                        df['current_stop_loss'][i] = df['entry_price'][i] - df['atr'][i]
                     else:
                         df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
                                                             df['entry_price'][i] + 2 * df['atr'][i])
@@ -129,10 +127,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 5):
                     df['entry_price'][i] = df['Close'][i]
                     if df[signal_type_column_name][i] == 'parabolic_trend':
-                        df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
-                                                            df['entry_price'][i] - df['atr'][i])
-                        df['current_stop_loss'][i] = max(df['High'].rolling(prev_max_min_periods).max()[i],
-                                                         df['entry_price'][i] + df['atr'][i])
+                        df['current_profit_taker'][i] = abs(df['10_ma'][i] - df['entry_price'][i]) / 2
+                        df['current_stop_loss'][i] = df['entry_price'][i] + df['atr'][i]
                     else:
                         df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
                                                             df['entry_price'][i] - 2 * df['atr'][i])
