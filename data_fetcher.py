@@ -47,8 +47,8 @@ def get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time):
     data = pd.read_csv(io.StringIO(data.decode('utf-8')))
     data = data[['timestamp', 'open', 'high', 'low', 'close', 'adjusted_close', 'volume']]
     data.columns = ["Date", "Open","High","Low","Close","Adjusted_Close","Volume"]
-    data = data.iloc[::-1]
-    data = data.iloc[-(365*7):]
+    data = data.iloc[::-1].reset_index(drop=True)
+    data = data.iloc[-(365*7):].reset_index(drop=True)
     df = convert_columns_to_adjusted(data)
     time.sleep(0.4 - ((time.time() - start_time) % 0.4))
     return df
