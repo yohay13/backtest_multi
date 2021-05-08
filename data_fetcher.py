@@ -3,11 +3,9 @@
 import os
 import numpy as np
 import pandas as pd
-import datetime as dt
 import requests
-import copy
-from alpha_vantage.timeseries import TimeSeries
 import time
+import io
 
 
 key_path = '/Users/yochainusan/programs/algo_course/config/alpha_vantage/key.txt'
@@ -18,15 +16,6 @@ def get_sp500_list():
     df.to_csv('S&P500-Info.csv')
     df.to_csv("S&P500-Symbols.csv", columns=['Symbol'])
     return df['Symbol']
-
-def get_stock_data_trade_hours_alpha_vantage(ticker, interval, start_time, time):
-    ts = TimeSeries(open(key_path,'r').read(), output_format='pandas')
-    data = ts.get_intraday(symbol=ticker, interval=interval, outputsize='full')[0]
-    data.columns = ["Open","High","Low","Close","Volume"]
-    data = data.iloc[::-1]
-    data = data.between_time('09:35', '16:00') #remove data outside regular trading hours
-    time.sleep(0.4 - ((time.time() - start_time) % 0.4))
-    return data
 
 
 def get_stock_earnings_data(ticker, start_time, time):
@@ -39,25 +28,36 @@ def get_stock_earnings_data(ticker, start_time, time):
     return json_result
 
 
+def convert_columns_to_adjusted(stock_df):
+    df = stock_df.copy()
+    # for i in range(len(df)):
+    adjustment_ratio = df['Adjusted_Close'] / df['Close']
+    df['Open'] = adjustment_ratio * df['Open']
+    df['High'] = adjustment_ratio * df['High']
+    df['Low'] = adjustment_ratio * df['Low']
+    df['Close'] = df['Adjusted_Close']
+    df = df.drop(['Adjusted_Close'], axis=1)
+    return df
+
 
 def get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time):
     print(ticker)
-    ts = TimeSeries(open(key_path,'r').read(), output_format='pandas')
-    # data = ts.get_daily_adjusted(symbol=ticker, outputsize='full')[0]
-    data = ts.get_daily(symbol=ticker, outputsize='full')[0] # NOT ADJUSTED!!!! the dumbfucks adjusted only the close column
-    data = data[['1. open', '2. high', '3. low', '4. close', '5. volume']]
-    data.columns = ["Open","High","Low","Close","Volume"]
+    api_key = open(key_path, 'r').read()
+    data = requests.get(f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}&outputsize=full&datatype=csv').content
+    data = pd.read_csv(io.StringIO(data.decode('utf-8')))
+    data = data[['timestamp', 'open', 'high', 'low', 'close', 'adjusted_close', 'volume']]
+    data.columns = ["Date", "Open","High","Low","Close","Adjusted_Close","Volume"]
     data = data.iloc[::-1]
     data = data.iloc[-(365*7):]
+    df = convert_columns_to_adjusted(data)
     time.sleep(0.4 - ((time.time() - start_time) % 0.4))
-    return data
+    return df
+
 
 def get_data_for_stock(ticker, interval, start_time, time_module):
     # switch call between daily adjusted, TODO: intraday_extended! and weekly adjusted
     if interval == 'D':
         return get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time_module)
-
-    return get_stock_data_trade_hours_alpha_vantage(ticker, interval, start_time, time_module)
 
 
 def add_earnings_dates_to_stock(stock_df, earnings_json):
@@ -92,6 +92,6 @@ def get_data_dict_for_all_stocks_in_directory(directory_str):
         if filename.endswith(".csv") and filename[0].isupper():
             ticker = filename.split('_')[0]
             stock_df = pd.read_csv(directory_str + '/' + filename)
-            ohlc_intraday[ticker] = stock_df[['date', 'Open','High','Low','Close','Volume', 'is_earning_days']]
+            ohlc_intraday[ticker] = stock_df[['date','Open','High','Low','Close','Volume','is_earning_days']]
             tickers.append(ticker)
     return ohlc_intraday, tickers

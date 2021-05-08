@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from stocktrends import Renko
-from alpha_vantage.timeseries import TimeSeries
 import statsmodels.api as sm
 
 def get_ATR_column_for_stock(stock_df, period, only_column=True):
