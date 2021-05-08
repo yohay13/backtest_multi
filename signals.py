@@ -67,12 +67,14 @@ def parabolic_trending_n_periods(stock_df, n, signal_direction_column, signal_ty
     for i in range(len(df)):
         if i < n + 1:
             continue
-        if df["distance_from_10_ma"][i-3] >= 0 and df["distance_from_10_ma"][i] >= df["distance_from_10_ma"][i-1] \
+        if df["distance_from_10_ma"][i-3] >= 0 and df["distance_from_10_ma"][i] <= 0.03 \
+                and df["distance_from_10_ma"][i] >= df["distance_from_10_ma"][i-1] \
                 and df["distance_from_10_ma"][i-1] >= df["distance_from_10_ma"][i-2] \
                 and df["distance_from_10_ma"][i-2] >= df["distance_from_10_ma"][i-3]:
             df[signal_direction_column][i] = "negative"
             df[signal_type_column][i] = "parabolic_trend"
-        elif df["distance_from_10_ma"][i-3] <= 0 and df["distance_from_10_ma"][i] <= df["distance_from_10_ma"][i-1] \
+        elif df["distance_from_10_ma"][i-3] <= 0 and df["distance_from_10_ma"][i] >= -0.03 \
+                and df["distance_from_10_ma"][i] <= df["distance_from_10_ma"][i-1] \
                 and df["distance_from_10_ma"][i-1] <= df["distance_from_10_ma"][i-2] \
                 and df["distance_from_10_ma"][i-2] <= df["distance_from_10_ma"][i-3]:
             df[signal_direction_column][i] = "positive"
