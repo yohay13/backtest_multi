@@ -124,13 +124,13 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 5):
                     df['entry_price'][i] = df['Close'][i]
                     # df['current_profit_taker'][i] = min(df['Low'].rolling(prev_max_min_periods).min()[i], df['Close'][i] - 0.5 * df['atr'][i])
-                    df['current_profit_taker'][i] = min(df['Low'].rolling(prev_max_min_periods).min()[i],
+                    df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
                                                         df['Close'][i] - 2 * df['atr'][i])
                     # df['current_stop_loss'][i] = max(df['10_ma'][i], df['Close'][i] + df['atr'][i] * 0.5)
                     df['current_stop_loss'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
                                                      df['Close'][i] + df['atr'][i])
-                    if abs(df['current_profit_taker'][i] - df['Close'][i]) >= abs(
-                            df['Close'][i] - df['current_stop_loss'][i]) * 2:
+                    if abs(df['current_profit_taker'][i] - df['entry_price'][i]) >= 2 * abs(
+                            df['entry_price'][i] - df['current_stop_loss'][i]):
                         # enter position
                         df['in_position'][i] = True
                         df['indicators_mid_levels'][i] = 'Bearish'
