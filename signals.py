@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def parabolic_trending_n_periods(stock_df, n):
-    # assuming parabolic trend (consistent divergence of price from 10 day moving average) will reverse
-    # TODO: should be generic for n
-    df = stock_df.copy()
-    df['parabolic_trend'] = ""
-    for i in range(len(df)):
-        if i < n + 1:
-            continue
-        if df["distance_from_10_ma"][i-3] >= 0 and df["distance_from_10_ma"][i] >= df["distance_from_10_ma"][i-1] \
-                and df["distance_from_10_ma"][i-1] >= df["distance_from_10_ma"][i-2] \
-                and df["distance_from_10_ma"][i-2] >= df["distance_from_10_ma"][i-3]:
-            df['parabolic_trend'][i] = "Bearish"
-        elif df["distance_from_10_ma"][i-3] <= 0 and df["distance_from_10_ma"][i] <= df["distance_from_10_ma"][i-1] \
-                and df["distance_from_10_ma"][i-1] <= df["distance_from_10_ma"][i-2] \
-                and df["distance_from_10_ma"][i-2] <= df["distance_from_10_ma"][i-3]:
-            df['parabolic_trend'][i] = "Bullish"
-    return df['parabolic_trend']
-
 def check_non_adx_indicators_before_n_periods(df, i, num_periods, check_term):
     # check_term could be 'ABOVE' or 'BELOW'
     if i < num_periods:
@@ -65,17 +47,37 @@ def check_column_trend(df, column_name, i, diff=0):
     return 'NO_TREND'
 
 
-def indicators_mid_levels_signal(stock_df):
+def indicators_mid_levels_signal(stock_df, signal_direction_column, signal_type_column):
     df = stock_df.copy()
-    df['indicators_mid_levels'] = ''
-    df['indicators_mid_levels_zone'] = ''
     for i in range(len(df)):
         if i > 1:
             if df['adx'][i] > 25 and df['rsi'][i] > 50 and df['+di'][i] > 25 and df['-di'][i] < 25 and df['stochastic_k'][i] > 50 and df['stochastic_d'][i] > 50:
-                df['indicators_mid_levels_zone'][i] = 'positive'
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'indicators_mid_levels_zone'
             elif df['adx'][i] > 25 and df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50 and df['stochastic_d'][i] < 50:
-                df['indicators_mid_levels_zone'][i] = 'negative'
-    return df['indicators_mid_levels'], df['indicators_mid_levels_zone']
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'indicators_mid_levels_zone'
+    return df
+
+
+def parabolic_trending_n_periods(stock_df, n, signal_direction_column, signal_type_column):
+    # assuming parabolic trend (consistent divergence of price from 10 day moving average) will reverse
+    # TODO: should be generic for n
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i < n + 1:
+            continue
+        if df["distance_from_10_ma"][i-3] >= 0 and df["distance_from_10_ma"][i] >= df["distance_from_10_ma"][i-1] \
+                and df["distance_from_10_ma"][i-1] >= df["distance_from_10_ma"][i-2] \
+                and df["distance_from_10_ma"][i-2] >= df["distance_from_10_ma"][i-3]:
+            df[signal_direction_column][i] = "negative"
+            df[signal_type_column][i] = "parabolic_trend"
+        elif df["distance_from_10_ma"][i-3] <= 0 and df["distance_from_10_ma"][i] <= df["distance_from_10_ma"][i-1] \
+                and df["distance_from_10_ma"][i-1] <= df["distance_from_10_ma"][i-2] \
+                and df["distance_from_10_ma"][i-2] <= df["distance_from_10_ma"][i-3]:
+            df[signal_direction_column][i] = "positive"
+            df[signal_type_column][i] = "parabolic_trend"
+    return df
 
 
 def check_volume_high_enough(df, i):

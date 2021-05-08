@@ -39,7 +39,7 @@ def check_early_in_trend(df, signal_column_name, i, signal_value, period_check):
     return False
 
 
-def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name, prev_max_min_periods):
+def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name, signal_type_column_name, prev_max_min_periods):
     df = stock_df.copy()
     df['exits'] = ''
     df['action_return'] = ''
@@ -48,9 +48,9 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
     df['current_profit_taker'] = ''
     df['entry_price'] = ''
     df['in_position'] = ''
+    df['signal'] = ''
     for i in range(len(df)):
         if i > 1:
-            # if df['indicators_mid_levels_zone'][i] != '':
             # check in position
             if df['in_position'][i - 1]:
                 df['current_stop_loss'][i] = df['current_stop_loss'][i - 1]
@@ -105,16 +105,21 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                                                                                         i) and check_not_earnings_days(
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'positive', 5):
                     df['entry_price'][i] = df['Close'][i]
-                    df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
-                                                        df['entry_price'][i] + 2 * df['atr'][i])
-                    # df['current_stop_loss'][i] = min(df['10_ma'][i], df['Close'][i] - df['atr'][i])
-                    df['current_stop_loss'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
-                                                     df['entry_price'][i] - df['atr'][i])
+                    if df[signal_type_column_name][i] == 'parabolic_trend':
+                        df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
+                                                            df['entry_price'][i] + df['atr'][i])
+                        df['current_stop_loss'][i] = min(df['Low'].rolling(prev_max_min_periods).min()[i],
+                                                         df['entry_price'][i] - df['atr'][i])
+                    else:
+                        df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
+                                                            df['entry_price'][i] + 2 * df['atr'][i])
+                        df['current_stop_loss'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
+                                                         df['entry_price'][i] - df['atr'][i])
                     if df['current_profit_taker'][i] - df['entry_price'][i] >= 2 * (
                             df['entry_price'][i] - df['current_stop_loss'][i]):
                         # enter position
                         df['in_position'][i] = True
-                        df['indicators_mid_levels'][i] = 'Bullish'
+                        df['signal'][i] = 'Bullish'
                     else:
                         df['in_position'][i] = False
                     continue
@@ -123,17 +128,22 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                                                                                         i) and check_not_earnings_days(
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 5):
                     df['entry_price'][i] = df['Close'][i]
-                    # df['current_profit_taker'][i] = min(df['Low'].rolling(prev_max_min_periods).min()[i], df['Close'][i] - 0.5 * df['atr'][i])
-                    df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
-                                                        df['entry_price'][i] - 2 * df['atr'][i])
-                    # df['current_stop_loss'][i] = max(df['10_ma'][i], df['Close'][i] + df['atr'][i] * 0.5)
-                    df['current_stop_loss'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
-                                                     df['entry_price'][i] + df['atr'][i])
+                    if df[signal_type_column_name][i] == 'parabolic_trend':
+                        df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
+                                                            df['entry_price'][i] - df['atr'][i])
+                        df['current_stop_loss'][i] = max(df['High'].rolling(prev_max_min_periods).max()[i],
+                                                         df['entry_price'][i] + df['atr'][i])
+                    else:
+                        df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i],
+                                                            df['entry_price'][i] - 2 * df['atr'][i])
+                        df['current_stop_loss'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i],
+                                                         df['entry_price'][i] + df['atr'][i])
+
                     if abs(df['current_profit_taker'][i] - df['entry_price'][i]) >= 2 * abs(
                             df['entry_price'][i] - df['current_stop_loss'][i]):
                         # enter position
                         df['in_position'][i] = True
-                        df['indicators_mid_levels'][i] = 'Bearish'
+                        df['signal'][i] = 'Bearish'
                     else:
                         df['in_position'][i] = False
                     continue

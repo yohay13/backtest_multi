@@ -5,7 +5,7 @@ from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directo
 from strategies import calculate_exits_column_by_atr_and_prev_max_min
 from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
     get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr
-from signals import indicators_mid_levels_signal
+from signals import indicators_mid_levels_signal, parabolic_trending_n_periods
 import time
 
 
@@ -37,8 +37,11 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['stochastic_k'], stocks_dict[ticker]['stochastic_d'] = stochastic(stocks_dict[ticker], 14, 3)
     stocks_dict[ticker]['atr_volatility'], stocks_dict[ticker]['atr_volatility_ma'] = get_volatility_from_atr(stocks_dict[ticker], 14)
     stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 50)
-    stocks_dict[ticker]['indicators_mid_levels'], stocks_dict[ticker]['indicators_mid_levels_zone'] = indicators_mid_levels_signal(stocks_dict[ticker])
-    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 'indicators_mid_levels_zone', 14)
+    stocks_dict[ticker]['signal_type'] = ''
+    stocks_dict[ticker]['signal_direction'] = ''
+    stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
+    stocks_dict[ticker] = parabolic_trending_n_periods(stocks_dict[ticker], 3, 'signal_direction', 'signal_type')
+    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 'signal_direction', 'signal_type', 14)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
 
