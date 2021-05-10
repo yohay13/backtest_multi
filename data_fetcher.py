@@ -91,7 +91,8 @@ def get_data_dict_for_all_stocks_in_directory(directory_str):
         filename = os.fsdecode(file)
         if filename.endswith(".csv") and filename[0].isupper():
             ticker = filename.split('_')[0]
+            print(f'pulling ticker csv {ticker}')
             stock_df = pd.read_csv(directory_str + '/' + filename)
-            ohlc_intraday[ticker] = stock_df[['date','Open','High','Low','Close','Volume','is_earning_days']]
+            ohlc_intraday[ticker] = stock_df[['Date','Open','High','Low','Close','Volume','is_earning_days']]
             tickers.append(ticker)
     return ohlc_intraday, tickers

@@ -83,7 +83,11 @@ def parabolic_trending_n_periods(stock_df, n, signal_direction_column, signal_ty
 
 
 def check_volume_high_enough(df, i):
-    return df['ma_volume'][i] != '' and df['Volume'][i] > df['ma_volume'][i]
+    return df['ma_volume'][i] != '' and df['Volume'][i] > df['ma_volume'][i] and df['Volume'][i] >= 1000000
+
+
+def check_atr_volatility_low_enough(df, i):
+    return df['atr_volatility_ma'][i] != '' and df['atr_volatility_ma'][i] < 0.05
 
 
 def check_not_earnings_days(df, i):

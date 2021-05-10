@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from signals import check_volume_high_enough, check_not_earnings_days
+from signals import check_volume_high_enough, check_not_earnings_days, check_atr_volatility_low_enough
 
 
 def get_position_type_and_index(df, i, signal_column_name, in_position_column):
@@ -103,7 +103,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                 # check if i should enter a bullish position
                 if df[signal_column_name][i] == 'positive' and check_volume_high_enough(df,
                                                                                         i) and check_not_earnings_days(
-                        df, i) and check_early_in_trend(df, signal_column_name, i, 'positive', 5):
+                        df, i) and check_early_in_trend(df, signal_column_name, i, 'positive', 10) and \
+                        check_atr_volatility_low_enough(df, i):
                     df['entry_price'][i] = df['Close'][i]
                     if df[signal_type_column_name][i] == 'parabolic_trend':
                         df['current_profit_taker'][i] = df['entry_price'][i] + ((df['10_ma'][i] - df['entry_price'][i]) / 2)
@@ -124,7 +125,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                 # check if i should enter a bearish position
                 if df[signal_column_name][i] == 'negative' and check_volume_high_enough(df,
                                                                                         i) and check_not_earnings_days(
-                        df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 5):
+                        df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 10)\
+                        and check_atr_volatility_low_enough(df, i):
                     df['entry_price'][i] = df['Close'][i]
                     if df[signal_type_column_name][i] == 'parabolic_trend':
                         df['current_profit_taker'][i] = df['entry_price'][i] - (abs(df['10_ma'][i] - df['entry_price'][i]) / 2)
