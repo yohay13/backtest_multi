@@ -114,13 +114,13 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                     df['current_profit_taker'][i] = df['High'].rolling(prev_max_min_periods).max()[i]
                     # df['current_stop_loss'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i], df['entry_price'][i] - df['atr'][i])
                     df['current_stop_loss'][i] = df['entry_price'][i] - df['atr'][i]
+                    df['profit_potential'][i] = (df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
+                    df['loss_potential'][i] = (df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     if df['current_profit_taker'][i] - df['entry_price'][i] >= 2 * (
                             df['entry_price'][i] - df['current_stop_loss'][i]):
                         # enter position
                         df['in_position'][i] = True
                         df['signal'][i] = 'Bullish'
-                        df['profit_potential'][i] = (df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
-                        df['loss_potential'][i] = (df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     else:
                         df['in_position'][i] = False
                     continue
@@ -133,15 +133,13 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                     df['current_profit_taker'][i] = df['Low'].rolling(int(prev_max_min_periods / 2)).min()[i]
                     # df['current_stop_loss'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i], df['entry_price'][i] + df['atr'][i])
                     df['current_stop_loss'][i] = df['entry_price'][i] + df['atr'][i]
+                    df['profit_potential'][i] = abs(df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
+                    df['loss_potential'][i] = -(df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     if abs(df['current_profit_taker'][i] - df['entry_price'][i]) >= 2 * abs(
                             df['entry_price'][i] - df['current_stop_loss'][i]):
                         # enter position
                         df['in_position'][i] = True
                         df['signal'][i] = 'Bearish'
-                        df['profit_potential'][i] = abs(df['current_profit_taker'][i] - df['entry_price'][i]) / \
-                                                    df['entry_price'][i]
-                        df['loss_potential'][i] = -(df['current_stop_loss'][i] - df['entry_price'][i]) / \
-                                                  df['entry_price'][i]
                     else:
                         df['in_position'][i] = False
                     continue
