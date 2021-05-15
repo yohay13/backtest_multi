@@ -41,7 +41,7 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['signal_direction'] = ''
     stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
     # stocks_dict[ticker] = parabolic_trending_n_periods(stocks_dict[ticker], 3, 'signal_direction', 'signal_type')
-    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 'signal_direction', 'signal_type', 14)
+    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 'signal_direction', 'signal_type', 35)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
 
