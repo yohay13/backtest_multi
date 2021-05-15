@@ -110,14 +110,12 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                                                                                         i) and check_not_earnings_days(
                         df, i) and check_early_in_trend(df, signal_column_name, i, 'positive', 10): # and check_atr_volatility_low_enough(df, i):
                     df['entry_price'][i] = df['Close'][i]
-                    # df['current_profit_taker'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i], df['entry_price'][i] + 2 * df['atr'][i])
                     df['current_profit_taker'][i] = df['High'].rolling(prev_max_min_periods).max()[i]
-                    # df['current_stop_loss'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i], df['entry_price'][i] - df['atr'][i])
                     df['current_stop_loss'][i] = df['entry_price'][i] - df['atr'][i]
                     df['profit_potential'][i] = (df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     df['loss_potential'][i] = (df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     if df['current_profit_taker'][i] - df['entry_price'][i] >= 2 * (
-                            df['entry_price'][i] - df['current_stop_loss'][i]):
+                            df['entry_price'][i] - df['current_stop_loss'][i]) and df['loss_potential'][i] > -0.02:
                         # enter position
                         df['in_position'][i] = True
                         df['signal'][i] = 'Bullish'
@@ -127,11 +125,9 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, signal_column_name,
                 # check if i should enter a bearish position
                 if df[signal_column_name][i] == 'negative' and check_volume_high_enough(df,
                                                                                         i) and check_not_earnings_days(
-                        df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 10): # and check_atr_volatility_low_enough(df, i):
+                        df, i) and check_early_in_trend(df, signal_column_name, i, 'negative', 10) and (df['-di'][i] - df['+di'][i]) < 25:
                     df['entry_price'][i] = df['Close'][i]
-                    # df['current_profit_taker'][i] = max(df['Low'].rolling(prev_max_min_periods).min()[i], df['entry_price'][i] - 2 * df['atr'][i])
                     df['current_profit_taker'][i] = df['Low'].rolling(int(prev_max_min_periods / 2)).min()[i]
-                    # df['current_stop_loss'][i] = min(df['High'].rolling(prev_max_min_periods).max()[i], df['entry_price'][i] + df['atr'][i])
                     df['current_stop_loss'][i] = df['entry_price'][i] + df['atr'][i]
                     df['profit_potential'][i] = abs(df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
                     df['loss_potential'][i] = -(df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
