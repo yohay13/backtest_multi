@@ -101,4 +101,14 @@ for index, ticker in enumerate(adjusted_tickers):
         all_actions_df = pd.concat([all_actions_df, current_actions_df])
 
 all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
+
+latest_actions_df = pd.DataFrame()
+for index, ticker in enumerate(adjusted_tickers):
+    current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] == True]
+    current_actions_df['ticker'] = ticker
+    current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] == '']
+    if index == 0:
+        latest_actions_df = current_actions_df
+    else:
+        latest_actions_df = pd.concat([latest_actions_df, current_actions_df])
 finish = 1

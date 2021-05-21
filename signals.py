@@ -93,15 +93,15 @@ def joint_signal(stock_df, signal_direction_column, signal_type_column):
             if df['indicators_mid_level_direction'][i] == 'positive' and df['cross_50_direction'][i] == 'positive':
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'joint_50'
-            elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_50_direction'][i] == 'negative':
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'joint_50'
+            # elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_50_direction'][i] == 'negative':
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'joint_50'
             elif df['indicators_mid_level_direction'][i] == 'positive' and df['cross_20_direction'][i] == 'positive':
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'joint_20'
-            elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_20_direction'][i] == 'negative':
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'joint_20'
+            # elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_20_direction'][i] == 'negative':
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'joint_20'
     return df
 
 
