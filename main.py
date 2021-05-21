@@ -19,7 +19,7 @@ adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK'
 adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # yahoo finance screener - mega caps only, tech, energey and finance
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'BAC', 'C', 'TWTR', 'MA', 'TSM', 'V', 'JPM', 'NVDA', 'XOM', 'CVX']
-# adjusted_tickers = ['AAPL', 'FB', 'BKR']
+adjusted_tickers = ['AAPL', 'FB', 'BKR']
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 

@@ -8,7 +8,8 @@ import time
 import io
 
 
-key_path = '/Users/yochainusan/programs/algo_course/config/alpha_vantage/key.txt'
+key_path = '/Users/yochainusan/PycharmProjects/backtest_multi/config/alpha_vantage/key.txt'
+
 
 def get_sp500_list():
     table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
