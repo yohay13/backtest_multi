@@ -30,12 +30,11 @@ def get_stock_earnings_data(ticker, start_time, time):
 
 def convert_columns_to_adjusted(stock_df):
     df = stock_df.copy()
-    # for i in range(len(df)):
     adjustment_ratio = df['Adjusted_Close'] / df['Close']
-    df['Open'] = adjustment_ratio * df['Open']
-    df['High'] = adjustment_ratio * df['High']
-    df['Low'] = adjustment_ratio * df['Low']
-    df['Close'] = df['Adjusted_Close']
+    df['Open'] = (adjustment_ratio * df['Open']).round(2)
+    df['High'] = (adjustment_ratio * df['High']).round(2)
+    df['Low'] = (adjustment_ratio * df['Low']).round(2)
+    df['Close'] = (df['Adjusted_Close']).round(2)
     df = df.drop(['Adjusted_Close'], axis=1)
     return df
 
@@ -65,10 +64,7 @@ def add_earnings_dates_to_stock(stock_df, earnings_json):
     df['is_earning_days'] = ''
     for quarterly_report in earnings_json['quarterlyEarnings']:
         report_date_string = quarterly_report['reportedDate']
-        idx = np.searchsorted(df.index, report_date_string)
-        idx_prev = df.index[max(0, idx-1)]
-        df['is_earning_days'][idx] = True
-        df['is_earning_days'][idx_prev] = True
+        df['is_earning_days'][df['Date'] == report_date_string] = True
     return df['is_earning_days']
 
 
