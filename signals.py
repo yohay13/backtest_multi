@@ -47,16 +47,61 @@ def check_column_trend(df, column_name, i, diff=0):
     return 'NO_TREND'
 
 
+def cross_20_ma(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['Close'][i] > df['20_ma'][i] and df['Close'][i-1] <= df['20_ma'][i-1]:
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'cross_20'
+            elif (df['20_ma'][i] - df['Close'][i]) / df['20_ma'][i] > 0.01 and (df['20_ma'][i-1] - df['Close'][i-1]) / df['20_ma'][i-1] <= 0.01:
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'cross_20'
+    return df
+
+
+def cross_50_ma(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['Close'][i] > df['50_ma'][i] and df['Close'][i-1] <= df['50_ma'][i-1]:
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'cross_50'
+            elif (df['50_ma'][i] - df['Close'][i]) / df['50_ma'][i] > 0.01 and (df['50_ma'][i-1] - df['Close'][i-1]) / df['50_ma'][i-1] <= 0.01:
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'cross_50'
+    return df
+
+
 def indicators_mid_levels_signal(stock_df, signal_direction_column, signal_type_column):
     df = stock_df.copy()
     for i in range(len(df)):
         if i > 1:
-            if df['adx'][i] > 25 and df['rsi'][i] > 50 and df['+di'][i] > 25 and df['-di'][i] < 25 and df['stochastic_k'][i] > 50 and df['stochastic_d'][i] > 50:
+            if df['rsi'][i] > 50 and df['+di'][i] > 25 and df['-di'][i] < 25 and df['stochastic_k'][i] > 50:
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'indicators_mid_levels_zone'
-            elif df['adx'][i] > 25 and df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50 and df['stochastic_d'][i] < 50:
+            elif df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50:
                 df[signal_direction_column][i] = 'negative'
                 df[signal_type_column][i] = 'indicators_mid_levels_zone'
+    return df
+
+
+def joint_signal(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['indicators_mid_level_direction'][i] == 'positive' and df['cross_50_direction'][i] == 'positive':
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'joint_50'
+            elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_50_direction'][i] == 'negative':
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'joint_50'
+            elif df['indicators_mid_level_direction'][i] == 'positive' and df['cross_20_direction'][i] == 'positive':
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'joint_20'
+            elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_20_direction'][i] == 'negative':
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'joint_20'
     return df
 
 
@@ -84,6 +129,10 @@ def parabolic_trending_n_periods(stock_df, n, signal_direction_column, signal_ty
 
 def check_volume_high_enough(df, i):
     return df['ma_volume'][i] != '' and df['Volume'][i] > df['ma_volume'][i] and df['Volume'][i] >= 1000000
+
+
+def check_additional_positive_indicators(df, i):
+    return df['atr_volatility_ma'][i] < 0.04 and df['distance_from_10_ma'][i] > 0.04
 
 
 def check_atr_volatility_low_enough(df, i):
