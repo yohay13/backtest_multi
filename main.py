@@ -19,13 +19,13 @@ adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK'
 adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # yahoo finance screener - mega caps only, tech, energey and finance
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'BAC', 'C', 'TWTR', 'MA', 'TSM', 'V', 'JPM', 'NVDA', 'XOM', 'CVX']
-# adjusted_tickers = ['AAPL']
+# adjusted_tickers = ['AAPL', 'FB', 'BKR']
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
-# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
-stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 # adjusted_tickers = ['AAPL']
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
@@ -104,11 +104,20 @@ all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
 
 latest_actions_df = pd.DataFrame()
 for index, ticker in enumerate(adjusted_tickers):
-    current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] == True]
+    if stocks_dict[ticker]['in_position'].iloc[-1] != True:
+        continue
+    current_actions_df = stocks_dict[ticker]
     current_actions_df['ticker'] = ticker
-    current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] == '']
+    last_position_enter_index = len(current_actions_df)
+    for i in range(len(current_actions_df), 0, -1):
+        if current_actions_df['in_position'][i] != True:
+            last_position_enter_index = i
+            break
+    current_actions_df = current_actions_df.tail(len(current_actions_df) - last_position_enter_index)
     if index == 0:
         latest_actions_df = current_actions_df
     else:
         latest_actions_df = pd.concat([latest_actions_df, current_actions_df])
+
+latest_actions_df.to_csv(f'stocks_csvs_new/latest_actions_df.csv', index=False)
 finish = 1

@@ -54,9 +54,9 @@ def cross_20_ma(stock_df, signal_direction_column, signal_type_column):
             if df['Close'][i] > df['20_ma'][i] and df['Close'][i-1] <= df['20_ma'][i-1]:
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'cross_20'
-            elif (df['20_ma'][i] - df['Close'][i]) / df['20_ma'][i] > 0.01 and (df['20_ma'][i-1] - df['Close'][i-1]) / df['20_ma'][i-1] <= 0.01:
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'cross_20'
+            # elif (df['20_ma'][i] - df['Close'][i]) / df['20_ma'][i] > 0.01 and (df['20_ma'][i-1] - df['Close'][i-1]) / df['20_ma'][i-1] <= 0.01:
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'cross_20'
     return df
 
 
@@ -67,9 +67,9 @@ def cross_50_ma(stock_df, signal_direction_column, signal_type_column):
             if df['Close'][i] > df['50_ma'][i] and df['Close'][i-1] <= df['50_ma'][i-1]:
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'cross_50'
-            elif (df['50_ma'][i] - df['Close'][i]) / df['50_ma'][i] > 0.01 and (df['50_ma'][i-1] - df['Close'][i-1]) / df['50_ma'][i-1] <= 0.01:
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'cross_50'
+            # elif (df['50_ma'][i] - df['Close'][i]) / df['50_ma'][i] > 0.01 and (df['50_ma'][i-1] - df['Close'][i-1]) / df['50_ma'][i-1] <= 0.01:
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'cross_50'
     return df
 
 
@@ -80,9 +80,9 @@ def indicators_mid_levels_signal(stock_df, signal_direction_column, signal_type_
             if df['rsi'][i] > 50 and df['+di'][i] > 25 and df['-di'][i] < 25 and df['stochastic_k'][i] > 50:
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'indicators_mid_levels_zone'
-            elif df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50:
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'indicators_mid_levels_zone'
+            # elif df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50:
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'indicators_mid_levels_zone'
     return df
 
 
