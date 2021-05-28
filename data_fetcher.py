@@ -9,6 +9,7 @@ import io
 
 
 key_path = '/Users/yochainusan/PycharmProjects/backtest_multi/config/alpha_vantage/key.txt'
+telegram_key_path = '/Users/yochainusan/PycharmProjects/order_notifier/config/telegram/key.txt'
 
 
 def get_sp500_list():
