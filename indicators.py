@@ -45,7 +45,7 @@ def get_macd_columns_for_stock(stock_df,a,b,c):
     df["MACD"]=df["MA_Fast"]-df["MA_Slow"]
     df["Signal"]=df["MACD"].ewm(span=c,min_periods=c).mean()
     # df.dropna(inplace=True)
-    return (df["MACD"],df["Signal"])
+    return df["MACD"], df["Signal"]
 
 def get_rolling_max_column_for_stock(stock_df, column_name, period):
     df = stock_df.copy()

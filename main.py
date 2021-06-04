@@ -5,7 +5,8 @@ from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directo
     get_data_for_stock
 from strategies import calculate_exits_column_by_atr_and_prev_max_min
 from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
-    get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr
+    get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr, \
+    get_macd_columns_for_stock
 from signals import indicators_mid_levels_signal, parabolic_trending_n_periods, cross_20_ma, cross_50_ma, joint_signal
 import time
 import matplotlib.pyplot as plt
@@ -35,6 +36,7 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['20_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 20)
     stocks_dict[ticker]['50_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 50)
     stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 20)
+    stocks_dict[ticker]['macd'], stocks_dict[ticker]['macd_signal'] = get_macd_columns_for_stock(stocks_dict[ticker], 12, 26, 9)
     stocks_dict[ticker]['atr'] = get_ATR_column_for_stock(stocks_dict[ticker], 14)
     stocks_dict[ticker]['distance_from_10_ma'] = get_distance_between_columns_for_stock(stocks_dict[ticker], 'Close', '10_ma')
     stocks_dict[ticker]['adx'], stocks_dict[ticker]['+di'], stocks_dict[ticker]['-di'] = get_adx_column_for_stock(stocks_dict[ticker], 14)
