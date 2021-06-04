@@ -1,7 +1,8 @@
 
 import pandas as pd
 import numpy as np
-from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directory, get_data_dict_for_multiple_stocks
+from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directory, get_data_dict_for_multiple_stocks, \
+    get_data_for_stock
 from strategies import calculate_exits_column_by_atr_and_prev_max_min
 from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
     get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr
@@ -19,14 +20,13 @@ adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK'
 adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # yahoo finance screener - mega caps only, tech, energey and finance
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'BAC', 'C', 'TWTR', 'MA', 'TSM', 'V', 'JPM', 'NVDA', 'XOM', 'CVX']
-adjusted_tickers = ['AAPL', 'FB', 'BKR']
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
-stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+# adjusted_tickers = ['FB', 'AAPL', 'NFLX']
+# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
-# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
-# adjusted_tickers = ['AAPL']
+stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
@@ -101,6 +101,29 @@ for index, ticker in enumerate(adjusted_tickers):
         all_actions_df = pd.concat([all_actions_df, current_actions_df])
 
 all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
+
+
+def merge_returns_with_same_date(df):
+    return df.groupby(by=["Date"]).sum()
+
+
+sp500 = get_data_for_stock('SPY', 'D', time.time(), time)
+
+all_actions_df_merged = merge_returns_with_same_date(all_actions_df[['action_return_on_signal_index', 'Date']])
+
+algo_gains_df = pd.concat([sp500.set_index('Date')[['Close']], all_actions_df_merged[['action_return_on_signal_index']]], axis=1)
+algo_gains_df['action_return_on_signal_index'] = algo_gains_df['action_return_on_signal_index'].fillna(0)
+algo_gains_df['algo_value'] = sp500['Close'][0]
+# should make a dataframe with total gains to date and plot against total gains per sp500. first price of sp500 should be first price of algo
+for action_index in range(len(algo_gains_df)):
+    if action_index == 1:
+        continue
+    algo_gains_df['algo_value'][action_index] = algo_gains_df['algo_value'][action_index - 1] + algo_gains_df['algo_value'][action_index - 1] * algo_gains_df['action_return_on_signal_index'][action_index]
+
+# algo_gains_df[['Close', 'algo_value']].plot(figsize=(16, 8))
+# plt.show()
+
+algo_gains_df.reset_index().to_csv(f'stocks_csvs_new/algo_gains_df.csv', index=False)
 
 latest_actions_df = pd.DataFrame()
 for index, ticker in enumerate(adjusted_tickers):
