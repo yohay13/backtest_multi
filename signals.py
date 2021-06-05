@@ -105,6 +105,58 @@ def joint_signal(stock_df, signal_direction_column, signal_type_column):
     return df
 
 
+def macd_cross_0_signal(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['macd'][i] > 0 and df['macd'][i - 1] < 0:
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'macd_cross_0'
+            elif df['macd'][i] < 0 and df['macd'][i - 1] > 0:
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'macd_cross_0'
+    return df
+
+
+def macd_signal_cross_signal(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['macd'][i] > df['macd_signal'][i] and df['macd'][i - 1] < df['macd_signal'][i - 1]:
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'macd_signal_cross'
+            elif df['macd'][i] < df['macd_signal'][i] and df['macd'][i - 1] > df['macd_signal'][i - 1]:
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'macd_signal_cross'
+    return df
+
+
+def joint_macd_signal_cross_signal(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['indicators_mid_level_direction'][i] == 'positive' and df['macd_signal_cross_direction'][i] == 'positive':
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'joint_macd_signal_cross'
+            elif df['indicators_mid_level_direction'][i] == 'negative' and df['macd_signal_cross_direction'][i] == 'negative':
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'joint_macd_signal_cross'
+    return df
+
+
+def joint_macd_cross_0_signal(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 1:
+            if df['indicators_mid_level_direction'][i] == 'positive' and df['macd_cross_0_direction'][i] == 'positive':
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'joint_macd_cross_0'
+            elif df['indicators_mid_level_direction'][i] == 'negative' and df['macd_cross_0_direction'][i] == 'negative':
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'joint_macd_cross_0'
+    return df
+
+
 def parabolic_trending_n_periods(stock_df, n, signal_direction_column, signal_type_column):
     # assuming parabolic trend (consistent divergence of price from 10 day moving average) will reverse
     # TODO: should be generic for n
