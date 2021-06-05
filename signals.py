@@ -73,6 +73,53 @@ def cross_50_ma(stock_df, signal_direction_column, signal_type_column):
     return df
 
 
+def check_awesome_osc_twin_peaks_in_negative_zone(df, index, period):
+    # assuming we have a cross to positive on the index point
+    early_min = 0
+    later_min = 0
+    lock_later_min = False
+    for i in range(index, index - period, -1):
+        if later_min > df['awesome_osc'][i] and not lock_later_min:
+            later_min = df['awesome_osc'][i]
+        elif later_min < df['awesome_osc'][i] and not lock_later_min:
+            lock_later_min = True
+        if early_min > df['awesome_osc'][i] and lock_later_min:
+            early_min = df['awesome_osc'][i]
+        if early_min < later_min:
+            return True
+    return False
+
+
+def check_awesome_osc_twin_peaks_in_positive_zone(df, index, period):
+    # assuming we have a cross to negative on the index point
+    early_max = 0
+    later_max = 0
+    lock_later_max = False
+    for i in range(index, index - period, -1):
+        if later_max < df['awesome_osc'][i] and not lock_later_max:
+            later_max = df['awesome_osc'][i]
+        elif later_max > df['awesome_osc'][i] and not lock_later_max:
+            lock_later_max = True
+        if early_max < df['awesome_osc'][i] and lock_later_max:
+            early_max = df['awesome_osc'][i]
+        if early_max > later_max:
+            return True
+    return False
+
+
+def awesome_oscilator(stock_df, signal_direction_column, signal_type_column):
+    df = stock_df.copy()
+    for i in range(len(df)):
+        if i > 100:
+            if df['awesome_osc'][i] > 0 and df['awesome_osc'][i-1] <= 0 and check_awesome_osc_twin_peaks_in_negative_zone(df, i, 80):
+                df[signal_direction_column][i] = 'positive'
+                df[signal_type_column][i] = 'awesome_osc'
+            elif df['awesome_osc'][i] < 0 and df['awesome_osc'][i-1] >= 0 and check_awesome_osc_twin_peaks_in_positive_zone(df, i, 80):
+                df[signal_direction_column][i] = 'negative'
+                df[signal_type_column][i] = 'awesome_osc'
+    return df
+
+
 def indicators_mid_levels_signal(stock_df, signal_direction_column, signal_type_column):
     df = stock_df.copy()
     for i in range(len(df)):
