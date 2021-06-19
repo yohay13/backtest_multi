@@ -27,9 +27,9 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX']
-# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
-stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
@@ -57,8 +57,6 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['cross_20_direction'] = ''
     stocks_dict[ticker]['cross_50_signal'] = ''
     stocks_dict[ticker]['cross_50_direction'] = ''
-    stocks_dict[ticker]['awesome_osc_signal'] = ''
-    stocks_dict[ticker]['awesome_osc_direction'] = ''
     # signal_type and signal_direction columns are the columns that determine the actual orders!
     stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'indicators_mid_level_direction', 'indicators_mid_levels_signal')
     stocks_dict[ticker] = cross_20_ma(stocks_dict[ticker], 'cross_20_direction', 'cross_20_signal')
@@ -131,27 +129,27 @@ for action_index in range(len(algo_gains_df)):
         continue
     algo_gains_df['algo_value'][action_index] = algo_gains_df['algo_value'][action_index - 1] + algo_gains_df['algo_value'][action_index - 1] * algo_gains_df['action_return_on_signal_index'][action_index]
 
-# algo_gains_df[['Close', 'algo_value']].plot(figsize=(16, 8))
-# plt.show()
+algo_gains_df[['Close', 'algo_value']].plot(figsize=(16, 8))
+plt.show()
 
 algo_gains_df.reset_index().to_csv(f'stocks_csvs_new/algo_gains_df.csv', index=False)
 
-latest_actions_df = pd.DataFrame()
-for index, ticker in enumerate(adjusted_tickers):
-    if stocks_dict[ticker]['in_position'].iloc[-1] != True:
-        continue
-    current_actions_df = stocks_dict[ticker]
-    current_actions_df['ticker'] = ticker
-    last_position_enter_index = len(current_actions_df)
-    for i in range(len(current_actions_df), 0, -1):
-        if current_actions_df['in_position'][i] != True:
-            last_position_enter_index = i
-            break
-    current_actions_df = current_actions_df.tail(len(current_actions_df) - last_position_enter_index)
-    if index == 0:
-        latest_actions_df = current_actions_df
-    else:
-        latest_actions_df = pd.concat([latest_actions_df, current_actions_df])
-
-latest_actions_df.to_csv(f'stocks_csvs_new/latest_actions_df.csv', index=False)
-finish = 1
+# latest_actions_df = pd.DataFrame()
+# for index, ticker in enumerate(adjusted_tickers):
+#     if stocks_dict[ticker]['in_position'].iloc[-1] != True:
+#         continue
+#     current_actions_df = stocks_dict[ticker]
+#     current_actions_df['ticker'] = ticker
+#     last_position_enter_index = len(current_actions_df)
+#     for i in range(len(current_actions_df), 0, -1):
+#         if current_actions_df['in_position'][i] != True:
+#             last_position_enter_index = i
+#             break
+#     current_actions_df = current_actions_df.tail(len(current_actions_df) - last_position_enter_index)
+#     if index == 0:
+#         latest_actions_df = current_actions_df
+#     else:
+#         latest_actions_df = pd.concat([latest_actions_df, current_actions_df])
+#
+# latest_actions_df.to_csv(f'stocks_csvs_new/latest_actions_df.csv', index=False)
+# finish = 1

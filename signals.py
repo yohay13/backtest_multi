@@ -78,7 +78,9 @@ def check_awesome_osc_twin_peaks_in_negative_zone(df, index, period):
     early_min = 0
     later_min = 0
     lock_later_min = False
-    for i in range(index, index - period, -1):
+    for i in range(index - 1, index - period, -1):
+        if df['awesome_osc'][i] > 0:
+            return False
         if later_min > df['awesome_osc'][i] and not lock_later_min:
             later_min = df['awesome_osc'][i]
         elif later_min < df['awesome_osc'][i] and not lock_later_min:
@@ -95,7 +97,9 @@ def check_awesome_osc_twin_peaks_in_positive_zone(df, index, period):
     early_max = 0
     later_max = 0
     lock_later_max = False
-    for i in range(index, index - period, -1):
+    for i in range(index - 1, index - period, -1):
+        if df['awesome_osc'][i] < 0:
+            return False
         if later_max < df['awesome_osc'][i] and not lock_later_max:
             later_max = df['awesome_osc'][i]
         elif later_max > df['awesome_osc'][i] and not lock_later_max:
@@ -114,9 +118,9 @@ def awesome_oscilator(stock_df, signal_direction_column, signal_type_column):
             if df['awesome_osc'][i] > 0 and df['awesome_osc'][i-1] <= 0 and check_awesome_osc_twin_peaks_in_negative_zone(df, i, 80):
                 df[signal_direction_column][i] = 'positive'
                 df[signal_type_column][i] = 'awesome_osc'
-            elif df['awesome_osc'][i] < 0 and df['awesome_osc'][i-1] >= 0 and check_awesome_osc_twin_peaks_in_positive_zone(df, i, 80):
-                df[signal_direction_column][i] = 'negative'
-                df[signal_type_column][i] = 'awesome_osc'
+            # elif df['awesome_osc'][i] < 0 and df['awesome_osc'][i-1] >= 0 and check_awesome_osc_twin_peaks_in_positive_zone(df, i, 80):
+            #     df[signal_direction_column][i] = 'negative'
+            #     df[signal_type_column][i] = 'awesome_osc'
     return df
 
 
