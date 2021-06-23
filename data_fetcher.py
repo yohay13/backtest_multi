@@ -75,8 +75,9 @@ def get_data_dict_for_multiple_stocks(tickers, interval, time_module):
     start_time = time.time()
     for ticker in tickers:
         stock_data = get_data_for_stock(ticker, interval, start_time, time_module)
-        earnings = get_stock_earnings_data(ticker, start_time, time_module)
-        stock_data['is_earning_days'] = add_earnings_dates_to_stock(stock_data, earnings)
+        # earnings = get_stock_earnings_data(ticker, start_time, time_module)
+        # stock_data['is_earning_days'] = add_earnings_dates_to_stock(stock_data, earnings)
+        stock_data['is_earning_days'] = ''  # TODO: once I get how to catch and retry, add the earnings back!
         ohlc_intraday[ticker] = stock_data
     return ohlc_intraday
 
