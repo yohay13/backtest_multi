@@ -12,6 +12,23 @@ key_path = '/Users/yochainusan/PycharmProjects/backtest_multi/config/alpha_vanta
 telegram_key_path = '/Users/yochainusan/PycharmProjects/order_notifier/config/telegram/key.txt'
 
 
+def retry_get_request(url):
+    retries = 1
+    success = False
+    while not success and retries <= 10:
+        try:
+            response = requests.get(url)
+            success = True
+            return response
+        except Exception as e:
+            wait = retries * 10
+            print(f'Error Get Requesting {url}: {e}')
+            print('Error! Waiting %s secs and re-trying...' % wait)
+            time.sleep(wait)
+            retries += 1
+    return None
+
+
 def get_sp500_list():
     table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
     df = table[0]
@@ -44,7 +61,12 @@ def convert_columns_to_adjusted(stock_df):
 def get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time):
     print(ticker)
     api_key = open(key_path, 'r').read()
-    data = requests.get(f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}&outputsize=full&datatype=csv').content
+    data = retry_get_request(f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}&outputsize=full&datatype=csv').content
+    if data is None:
+        return None
+    data = pd.read_csv(io.StringIO(data.decode('utf-8')))
+    if 'close' not in data:
+        return None
     data = pd.read_csv(io.StringIO(data.decode('utf-8')))
     data = data[['timestamp', 'open', 'high', 'low', 'close', 'adjusted_close', 'volume']]
     data.columns = ["Date", "Open","High","Low","Close","Adjusted_Close","Volume"]
@@ -58,7 +80,10 @@ def get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time):
 def get_data_for_stock(ticker, interval, start_time, time_module):
     # switch call between daily adjusted, TODO: intraday_extended! and weekly adjusted
     if interval == 'D':
-        return get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time_module)
+        stock_data = get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time_module)
+        if stock_data is None:
+            return None
+        return stock_data
 
 
 def add_earnings_dates_to_stock(stock_df, earnings_json):
@@ -75,6 +100,8 @@ def get_data_dict_for_multiple_stocks(tickers, interval, time_module):
     start_time = time.time()
     for ticker in tickers:
         stock_data = get_data_for_stock(ticker, interval, start_time, time_module)
+        if stock_data is None:
+            continue
         # earnings = get_stock_earnings_data(ticker, start_time, time_module)
         # stock_data['is_earning_days'] = add_earnings_dates_to_stock(stock_data, earnings)
         stock_data['is_earning_days'] = ''  # TODO: once I get how to catch and retry, add the earnings back!
