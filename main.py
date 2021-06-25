@@ -30,6 +30,11 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
 stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+
+for ticker in adjusted_tickers:
+    if ticker not in stocks_dict:
+        adjusted_tickers.remove(ticker)
+
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
@@ -63,7 +68,7 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker] = cross_50_ma(stocks_dict[ticker], 'cross_50_direction', 'cross_50_signal')
 
     stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
-    stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
+    # stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
 
     stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
@@ -71,9 +76,45 @@ for ticker in adjusted_tickers:
     # stocks_dict[ticker].tail(1000).plot(x="Date", y=["Close", "50_ma"])
     # plt.show()
 
+# add data to some whole stocks data df
+all_stocks_data_df['average_action_p_l'] = ''
+all_stocks_data_df['median_action_p_l'] = ''
+all_stocks_data_df['min_action_p_l'] = ''
+all_stocks_data_df['max_action_p_l'] = ''
+all_stocks_data_df['total_p_l'] = ''
+all_stocks_data_df['total_correct_actions'] = ''
+all_stocks_data_df['total_wrong_actions'] = ''
+all_stocks_data_df['total_actions'] = ''
+all_stocks_data_df['total_periods'] = ''
+all_stocks_data_df['pct_actions'] = ''
+all_stocks_data_df['pct_correct_actions'] = ''
+for index, ticker in enumerate(adjusted_tickers):
+    print(f'all stocks data: {ticker}')
+    all_stocks_data_df['average_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).mean()
+    all_stocks_data_df['median_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).median()
+    all_stocks_data_df['min_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).min()
+    all_stocks_data_df['max_action_p_l'][index] = stocks_dict[ticker]['action_return'].replace('', np.nan).max()
+    temp_series_cumprod = (1 + stocks_dict[ticker]['action_return'].replace('', np.nan)).cumprod()
+    if temp_series_cumprod.dropna().empty:
+        all_stocks_data_df['total_p_l'][index] = 0
+    else:
+        all_stocks_data_df['total_p_l'][index] = temp_series_cumprod.dropna().iloc[-1] - 1
+    all_stocks_data_df['total_correct_actions'][index] = stocks_dict[ticker]['action_return'][stocks_dict[ticker]['action_return'].replace('', np.nan) > 0].count()
+    all_stocks_data_df['total_wrong_actions'][index] = stocks_dict[ticker]['action_return'][stocks_dict[ticker]['action_return'].replace('', np.nan) < 0].count()
+    all_stocks_data_df['total_actions'][index] = all_stocks_data_df['total_correct_actions'][index] + all_stocks_data_df['total_wrong_actions'][index]
+    all_stocks_data_df['total_periods'][index] = len(stocks_dict[ticker])
+    all_stocks_data_df['pct_actions'][index] = all_stocks_data_df['total_actions'][index] / len(stocks_dict[ticker])
+    if all_stocks_data_df['total_actions'][index] == 0:
+        continue
+    all_stocks_data_df['pct_correct_actions'][index] = all_stocks_data_df['total_correct_actions'][index] / all_stocks_data_df['total_actions'][index]
+all_stocks_data_df.to_csv(f'stocks_csvs_new/all_stocks_data.csv', index=False)
+
 all_actions_df = pd.DataFrame()
 for index, ticker in enumerate(adjusted_tickers):
+    print(f'all actions df: {ticker}')
     current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] != ''].copy()
+    if len(current_actions_df) == 0:
+        continue
     current_actions_df.loc[:, 'ticker'] = ticker
     current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] != '']
     if index == 0:
