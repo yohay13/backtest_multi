@@ -52,8 +52,8 @@ def cross_20_ma(stock_df, signal_direction_column, signal_type_column):
     for i in range(len(df)):
         if i > 1:
             if df['Close'][i] > df['20_ma'][i] and df['Close'][i-1] <= df['20_ma'][i-1]:
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'cross_20'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'cross_20'
             # elif (df['20_ma'][i] - df['Close'][i]) / df['20_ma'][i] > 0.01 and (df['20_ma'][i-1] - df['Close'][i-1]) / df['20_ma'][i-1] <= 0.01:
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'cross_20'
@@ -65,8 +65,8 @@ def cross_50_ma(stock_df, signal_direction_column, signal_type_column):
     for i in range(len(df)):
         if i > 1:
             if df['Close'][i] > df['50_ma'][i] and df['Close'][i-1] <= df['50_ma'][i-1]:
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'cross_50'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'cross_50'
             # elif (df['50_ma'][i] - df['Close'][i]) / df['50_ma'][i] > 0.01 and (df['50_ma'][i-1] - df['Close'][i-1]) / df['50_ma'][i-1] <= 0.01:
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'cross_50'
@@ -116,8 +116,8 @@ def awesome_oscilator(stock_df, signal_direction_column, signal_type_column):
     for i in range(len(df)):
         if i > 100:
             if df['awesome_osc'][i] > 0 and df['awesome_osc'][i-1] <= 0 and check_awesome_osc_twin_peaks_in_negative_zone(df, i, 80):
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'awesome_osc'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'awesome_osc'
             # elif df['awesome_osc'][i] < 0 and df['awesome_osc'][i-1] >= 0 and check_awesome_osc_twin_peaks_in_positive_zone(df, i, 80):
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'awesome_osc'
@@ -129,8 +129,8 @@ def indicators_mid_levels_signal(stock_df, signal_direction_column, signal_type_
     for i in range(len(df)):
         if i > 1:
             if df['rsi'][i] > 50 and df['+di'][i] > 25 and df['-di'][i] < 25 and df['stochastic_k'][i] > 50:
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'indicators_mid_levels_zone'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'indicators_mid_levels_zone'
             # elif df['rsi'][i] < 50 and df['+di'][i] < 25 and df['-di'][i] > 25 and df['stochastic_k'][i] < 50:
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'indicators_mid_levels_zone'
@@ -142,14 +142,14 @@ def joint_signal(stock_df, signal_direction_column, signal_type_column):
     for i in range(len(df)):
         if i > 1:
             if df['indicators_mid_level_direction'][i] == 'positive' and df['cross_50_direction'][i] == 'positive':
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'joint_50'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'joint_50'
             # elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_50_direction'][i] == 'negative':
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'joint_50'
             elif df['indicators_mid_level_direction'][i] == 'positive' and df['cross_20_direction'][i] == 'positive':
-                df[signal_direction_column][i] = 'positive'
-                df[signal_type_column][i] = 'joint_20'
+                df.at[i, signal_direction_column] = 'positive'
+                df.at[i, signal_type_column] = 'joint_20'
             # elif df['indicators_mid_level_direction'][i] == 'negative' and df['cross_20_direction'][i] == 'negative':
             #     df[signal_direction_column][i] = 'negative'
             #     df[signal_type_column][i] = 'joint_20'

@@ -26,10 +26,10 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
-# adjusted_tickers = ['FB', 'AAPL', 'NFLX']
-# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+adjusted_tickers = ['FB', 'AAPL', 'NFLX']
+stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
-stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
@@ -103,8 +103,8 @@ all_stocks_data_df.to_csv(f'stocks_csvs_new/all_stocks_data.csv', index=False)
 
 all_actions_df = pd.DataFrame()
 for index, ticker in enumerate(adjusted_tickers):
-    current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] != '']
-    current_actions_df['ticker'] = ticker
+    current_actions_df = stocks_dict[adjusted_tickers[index]].loc[stocks_dict[adjusted_tickers[index]]['in_position'] != ''].copy()
+    current_actions_df.loc[:, 'ticker'] = ticker
     current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] != '']
     if index == 0:
         all_actions_df = current_actions_df
@@ -115,8 +115,9 @@ all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
 
 
 def merge_returns_with_same_date(df):
-    df['action_return_on_signal_index'] = pd.to_numeric(df['action_return_on_signal_index'])
-    return df.groupby(by=["Date"]).mean()
+    df_copy = df.copy()
+    df_copy.loc[:, 'action_return_on_signal_index'] = pd.to_numeric(df_copy['action_return_on_signal_index'])
+    return df_copy.groupby(by=["Date"]).mean()
 
 
 sp500 = get_data_for_stock('SPY', 'D', time.time(), time)

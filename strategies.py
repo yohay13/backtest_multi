@@ -13,23 +13,23 @@ def get_position_direction_and_index(df, i, signal_column_name, in_position_colu
 
 def exit_bullish(stock_df, current_index, signal_index, trigger_column):
     df = stock_df.copy()
-    df['exits'][current_index] = 'Exit Buy'
-    df['action_return'][current_index] = (df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
+    df.at[current_index, 'exits'] = 'Exit Buy'
+    df.at[current_index, 'action_return'] = (df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
         signal_index]
-    df['action_return_on_signal_index'][signal_index] = df['action_return'][current_index]
-    df['action_length'][signal_index] = current_index - signal_index
-    df['in_position'][current_index] = False
+    df.at[signal_index, 'action_return_on_signal_index'] = df['action_return'][current_index]
+    df.at[signal_index, 'action_length'] = current_index - signal_index
+    df.at[current_index, 'in_position'] = False
     return df
 
 
 def exit_bearish(stock_df, current_index, signal_index, trigger_column):
     df = stock_df.copy()
-    df['exits'][current_index] = 'Exit Sell'
-    df['action_return'][current_index] = -(df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
+    df.at[current_index, 'exits'] = 'Exit Sell'
+    df[current_index, 'action_return'] = -(df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
         signal_index]
-    df['action_return_on_signal_index'][signal_index] = df['action_return'][current_index]
-    df['action_length'][signal_index] = current_index - signal_index
-    df['in_position'][current_index] = False
+    df.at[signal_index, 'action_return_on_signal_index'] = df['action_return'][current_index]
+    df.at[signal_index, 'action_length'] = current_index - signal_index
+    df.at[current_index, 'in_position'] = False
     return df
 
 
@@ -66,84 +66,84 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
     for i in range(len(df)):
         if i > 1:
             # check in position
-            if df['in_position'][i - 1]:
-                df['current_stop_loss'][i] = df['current_stop_loss'][i - 1]
-                df['current_profit_taker'][i] = df['current_profit_taker'][i - 1]
-                df['entry_price'][i] = df['entry_price'][i - 1]
-                df['in_position'][i] = df['in_position'][i - 1]
+            if df.at[i - 1, 'in_position']:
+                df.at[i, 'current_stop_loss'] = df.at[i - 1, 'current_stop_loss']
+                df.at[i, 'current_profit_taker'] = df.at[i - 1, 'current_profit_taker']
+                df.at[i, 'entry_price'] = df.at[i - 1, 'entry_price']
+                df.at[i, 'in_position'] = df.at[i - 1, 'in_position']
                 # check for exit
                 signal_direction, signal_index = get_position_direction_and_index(df, i, 'signal_direction', 'in_position')
-                if signal_direction == 'positive' and df['current_profit_taker'][i] <= df['Open'][i]:
+                if signal_direction == 'positive' and df.at[i, 'current_profit_taker'] <= df.at[i, 'Open']:
                     df = exit_bullish(df, i, signal_index, 'Open')  # exit open
                     continue
-                if signal_direction == 'positive' and df['current_profit_taker'][i] <= df['High'][i]:
+                if signal_direction == 'positive' and df.at[i, 'current_profit_taker'] <= df.at[i, 'High']:
                     df = exit_bullish(df, i, signal_index, 'current_profit_taker')  # exit pt
                     continue
-                if signal_direction == 'positive' and df['current_stop_loss'][i] >= df['Open'][i]:
+                if signal_direction == 'positive' and df.at[i, 'current_stop_loss'] >= df.at[i, 'Open']:
                     df = exit_bullish(df, i, signal_index, 'Open')  # exit open
                     continue
-                if signal_direction == 'positive' and df['current_stop_loss'][i] >= df['Low'][i]:
+                if signal_direction == 'positive' and df.at[i, 'current_stop_loss'] >= df.at[i, 'Low']:
                     df = exit_bullish(df, i, signal_index, 'current_stop_loss')  # exit sl
                     continue
-                if signal_direction == 'negative' and df['current_stop_loss'][i] <= df['Open'][i]:
+                if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'Open']:
                     df = exit_bearish(df, i, signal_index, 'Open')  # exit open
                     continue
-                if signal_direction == 'negative' and df['current_stop_loss'][i] <= df['High'][i]:
+                if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'High']:
                     df = exit_bearish(df, i, signal_index, 'current_stop_loss')  # exit sl
                     continue
-                if signal_direction == 'negative' and df['current_profit_taker'][i] >= df['Open'][i]:
+                if signal_direction == 'negative' and df.at[i, 'current_profit_taker'] >= df.at[i, 'Open']:
                     df = exit_bearish(df, i, signal_index, 'Open')  # exit open
                     continue
-                if signal_direction == 'negative' and df['current_profit_taker'][i] >= df['Low'][i]:
+                if signal_direction == 'negative' and df.at[i, 'current_profit_taker'] >= df.at[i, 'Low']:
                     df = exit_bearish(df, i, signal_index, 'current_profit_taker')  # exit pt
                     continue
                 # check for moving stop loss
                 if signal_direction == 'positive':
-                    if (df['current_profit_taker'][i] - df['entry_price'][i]) * 0.75 <= df['Close'][i] - \
-                            df['entry_price'][i]:
+                    if (df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) * 0.75 <= df.at[i, 'Close'] - \
+                            df.at[i, 'entry_price']:
                         # new stop_loss is max between close-0.5atr and close+reward/2
-                        df['current_stop_loss'][i] = max(df['Close'][i] - 0.5 * df['atr'][i],
-                                                         (df['current_profit_taker'][i] + df['entry_price'][i]) / 2)
-                        df['current_profit_taker'][i] = df['current_profit_taker'][i] + df['atr'][i]
+                        df.at[i, 'current_stop_loss'] = max(df.at[i, 'Close'] - 0.5 * df.at[i, 'atr'],
+                                                         (df.at[i, 'current_profit_taker'] + df.at[i, 'entry_price']) / 2)
+                        df.at[i, 'current_profit_taker'] = df.at[i, 'current_profit_taker'] + df.at[i, 'atr']
                 elif signal_direction == 'negative':
-                    if (df['current_profit_taker'][i] - df['entry_price'][i]) * 0.75 >= df['Close'][i] - \
-                            df['entry_price'][i]:
+                    if (df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) * 0.75 >= df.at[i, 'Close'] - \
+                            df.at[i, 'entry_price']:
                         # new stop_loss is min between close+0.5atr and close+reward/2
-                        df['current_stop_loss'][i] = min(df['Close'][i] + 0.5 * df['atr'][i],
-                                                         (df['current_profit_taker'][i] + df['entry_price'][i]) / 2)
-                        df['current_profit_taker'][i] = df['current_profit_taker'][i] - df['atr'][i]
+                        df.at[i, 'current_stop_loss'] = min(df.at[i, 'Close'] + 0.5 * df.at[i, 'atr'],
+                                                         (df.at[i, 'current_profit_taker'] + df.at[i, 'entry_price']) / 2)
+                        df.at[i, 'current_profit_taker'] = df.at[i, 'current_profit_taker'] - df.at[i, 'atr']
             # if not in position
-            elif not df['in_position'][i - 1]:
+            elif not df.at[i - 1, 'in_position']:
                 # check if i should enter a bullish position
-                if df['signal_direction'][i] == 'positive' and \
-                        ((df['signal_type'][i].startswith('joint') and joint_positive_rules(df, i, 5)) or
-                         ((df['signal_type'][i] == 'awesome_osc') and check_not_earnings_days(df, i) and df['distance_from_10_ma'][i] > 0.04)):
-                    df['entry_price'][i] = df['Close'][i]
-                    df['current_profit_taker'][i] = df['High'].rolling(prev_max_min_periods).max()[i]
-                    df['current_stop_loss'][i] = df['entry_price'][i] - df['atr'][i]
-                    df['profit_potential'][i] = (df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
-                    df['loss_potential'][i] = (df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
-                    if df['current_profit_taker'][i] - df['entry_price'][i] >= 2 * (
-                            df['entry_price'][i] - df['current_stop_loss'][i]):
+                if df.at[i, 'signal_direction'] == 'positive' and \
+                        ((df.at[i, 'signal_type'].startswith('joint') and joint_positive_rules(df, i, 5)) or
+                         ((df.at[i, 'signal_type'] == 'awesome_osc') and check_not_earnings_days(df, i) and df.at[i, 'distance_from_10_ma'] > 0.04)):
+                    df.at[i, 'entry_price'] = df.at[i, 'Close']
+                    df.at[i, 'current_profit_taker'] = df['High'].rolling(prev_max_min_periods).max()[i]
+                    df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] - df.at[i, 'atr']
+                    df.at[i, 'profit_potential'] = (df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
+                    df.at[i, 'loss_potential'] = (df.at[i, 'current_stop_loss'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
+                    if df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price'] >= 2 * (
+                            df.at[i, 'entry_price'] - df.at[i, 'current_stop_loss']):
                         # enter position
-                        df['in_position'][i] = True
-                        df['signal'][i] = 'Bullish'
+                        df.at[i, 'in_position'] = True
+                        df.at[i, 'signal'] = 'Bullish'
                     else:
-                        df['in_position'][i] = False
+                        df.at[i, 'in_position'] = False
                     continue
                 # check if i should enter a bearish position
-                if df['signal_direction'][i] == 'negative' and check_not_earnings_days(df, i):
-                    df['entry_price'][i] = df['Close'][i]
-                    df['current_profit_taker'][i] = df['Low'].rolling(int(prev_max_min_periods / 2)).min()[i]
-                    df['current_stop_loss'][i] = df['entry_price'][i] + df['atr'][i]
-                    df['profit_potential'][i] = abs(df['current_profit_taker'][i] - df['entry_price'][i]) / df['entry_price'][i]
-                    df['loss_potential'][i] = -(df['current_stop_loss'][i] - df['entry_price'][i]) / df['entry_price'][i]
-                    if abs(df['current_profit_taker'][i] - df['entry_price'][i]) >= 2 * abs(
-                            df['entry_price'][i] - df['current_stop_loss'][i]):
+                if df.at[i, 'signal_direction'] == 'negative' and check_not_earnings_days(df, i):
+                    df.at[i, 'entry_price'] = df['Close'][i]
+                    df.at[i, 'current_profit_taker'] = df['Low'].rolling(int(prev_max_min_periods / 2)).min()[i]
+                    df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] + df.at[i, 'atr']
+                    df.at[i, 'profit_potential'] = abs(df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
+                    df.at[i, 'loss_potential'] = -(df.at[i, 'current_stop_loss'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
+                    if abs(df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) >= 2 * abs(
+                            df.at[i, 'entry_price'] - df.at[i, 'current_stop_loss']):
                         # enter position
-                        df['in_position'][i] = True
-                        df['signal'][i] = 'Bearish'
+                        df.at[i, 'in_position'] = True
+                        df.at[i, 'signal'] = 'Bearish'
                     else:
-                        df['in_position'][i] = False
+                        df.at[i, 'in_position'] = False
                     continue
     return df
