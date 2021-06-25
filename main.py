@@ -27,9 +27,9 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX']
-stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
-# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
@@ -61,8 +61,10 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'indicators_mid_level_direction', 'indicators_mid_levels_signal')
     stocks_dict[ticker] = cross_20_ma(stocks_dict[ticker], 'cross_20_direction', 'cross_20_signal')
     stocks_dict[ticker] = cross_50_ma(stocks_dict[ticker], 'cross_50_direction', 'cross_50_signal')
+
     stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
     stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
+
     stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
@@ -113,7 +115,8 @@ all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
 
 
 def merge_returns_with_same_date(df):
-    return df.groupby(by=["Date"]).sum()
+    df['action_return_on_signal_index'] = pd.to_numeric(df['action_return_on_signal_index'])
+    return df.groupby(by=["Date"]).mean()
 
 
 sp500 = get_data_for_stock('SPY', 'D', time.time(), time)
