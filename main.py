@@ -30,6 +30,9 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
 stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# adjusted_tickers = less_tickers
+# stocks_dict = { your_key: stocks_dict[your_key] for your_key in less_tickers }
+
 
 for ticker in adjusted_tickers:
     if ticker not in stocks_dict:
@@ -67,8 +70,8 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker] = cross_20_ma(stocks_dict[ticker], 'cross_20_direction', 'cross_20_signal')
     stocks_dict[ticker] = cross_50_ma(stocks_dict[ticker], 'cross_50_direction', 'cross_50_signal')
 
-    stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
-    # stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
+    # stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
+    stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
 
     stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
@@ -116,13 +119,93 @@ for index, ticker in enumerate(adjusted_tickers):
     if len(current_actions_df) == 0:
         continue
     current_actions_df.loc[:, 'ticker'] = ticker
-    current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] != '']
+    # current_actions_df = current_actions_df[current_actions_df['action_return_on_signal_index'] != '']
     if index == 0:
         all_actions_df = current_actions_df
     else:
         all_actions_df = pd.concat([all_actions_df, current_actions_df])
 
+INITIAL_POCKET_VALUE = 100
+MAX_POCKETS = 1
+pocket_list = [{
+    'amount': INITIAL_POCKET_VALUE,
+    'in_position': False,
+    'ticker': ''
+}]
+num_initial_pockets = 1
+
+
+def lock_pocket(pocket_list, ticker, num_initial_pockets):
+    for pocket_index in range(len(pocket_list)):
+        if pocket_list[pocket_index]['in_position'] == False:
+            pocket_list[pocket_index]['in_position'] = True
+            pocket_list[pocket_index]['ticker'] = ticker
+            return pocket_index, num_initial_pockets
+    # didnt find unlocked pocket - init a new one
+    if len(pocket_list) < MAX_POCKETS:
+        pocket_list.append({
+            'amount': INITIAL_POCKET_VALUE,
+            'in_position': True,
+            'ticker': ticker
+        })
+        num_initial_pockets += 1
+    return len(pocket_list) - 1, num_initial_pockets
+
+
+def merge_unlocked_pockets(pocket_list):
+    sum_unlocked_pockets = 0
+    num_unlocked_pockets = 0
+    for pocket_index in range(len(pocket_list)):
+        if pocket_list[pocket_index]['in_position'] == False:
+            sum_unlocked_pockets += pocket_list[pocket_index]['amount']
+            num_unlocked_pockets += 1
+    for pocket_index in range(len(pocket_list)):
+        if pocket_list[pocket_index]['in_position'] == False:
+            pocket_list[pocket_index]['amount'] = sum_unlocked_pockets / num_unlocked_pockets
+    # new_pocket_list = [pocket for pocket in pocket_list if pocket.get('in_position') == True]
+    # new_pocket_list.append({
+    #     'amount': sum_unlocked_pockets,
+    #     'in_position': False,
+    #     'ticker': ''
+    # })
+    return pocket_list
+
+
+def unlock_pocket(pocket_list, ticker, pct_gains):
+    for pocket_index in range(len(pocket_list)):
+        if pocket_list[pocket_index]['in_position'] == True and pocket_list[pocket_index]['ticker'] == ticker:
+            pocket_list[pocket_index]['in_position'] = False
+            pocket_list[pocket_index]['ticker'] = ''
+            pocket_list[pocket_index]['amount'] = (1 + pct_gains) * pocket_list[pocket_index]['amount']
+    return merge_unlocked_pockets(pocket_list)
+    # return pocket_list
+
+
+all_actions_df['pocket_amount'] = ''
+all_actions_df['pocket_index'] = ''
+all_actions_df['total_pockets_value'] = ''
+all_actions_df = all_actions_df.sort_values(by=['Date'])
+all_actions_df = all_actions_df.reset_index(drop=True)
+for row in range(len(all_actions_df)):
+    if all_actions_df.at[row, 'signal'] != '':
+        locked_pocket_index, num_initial_pockets = lock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], num_initial_pockets)
+        all_actions_df.at[row, 'pocket_amount'] = pocket_list[locked_pocket_index]['amount']
+        all_actions_df.at[row, 'pocket_index'] = locked_pocket_index
+    if all_actions_df.at[row, 'exits'] != '':
+        pocket_list = unlock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], all_actions_df.at[row, 'action_return'])
+        all_actions_df.at[row, 'total_pockets_value'] = sum(item['amount'] for item in pocket_list)
+    print(pocket_list)
+
+all_actions_df = all_actions_df[all_actions_df['action_return_on_signal_index'] != '']
 all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
+
+sum_init_pockets = num_initial_pockets * INITIAL_POCKET_VALUE
+sum_end_pockets = sum(item["amount"] for item in pocket_list)
+total_gains = (sum_end_pockets - sum_init_pockets) / sum_init_pockets
+print(f'pocket_list: {pocket_list}')
+print(f'sum of all initial pockets {sum_init_pockets}')
+print(f'current pockets value {sum_end_pockets}')
+print(f'total gains pct: {total_gains}')
 
 
 def merge_returns_with_same_date(df):

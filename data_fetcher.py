@@ -67,7 +67,6 @@ def get_stock_data_trade_daily_alpha_vantage(ticker, start_time, time):
     data = pd.read_csv(io.StringIO(data.decode('utf-8')))
     if 'close' not in data:
         return None
-    data = pd.read_csv(io.StringIO(data.decode('utf-8')))
     data = data[['timestamp', 'open', 'high', 'low', 'close', 'adjusted_close', 'volume']]
     data.columns = ["Date", "Open","High","Low","Close","Adjusted_Close","Volume"]
     data = data.iloc[::-1].reset_index(drop=True)

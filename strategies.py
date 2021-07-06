@@ -43,11 +43,16 @@ def check_early_in_trend(df, signal_column_name, i, signal_value, period_check):
 
 
 def basic_signal_checks(df, i):
-    return check_volume_high_enough(df, i) and check_not_earnings_days(df, i)
+    # return check_volume_high_enough(df, i) and check_not_earnings_days(df, i) and check_additional_positive_indicators(df, i)
+    return check_not_earnings_days(df, i) and check_additional_positive_indicators(df, i)
+
+
+def custom_signal_checks(df, i):
+    return df.at[i, 'rsi'] < 70 and df.at[i, 'atr_volatility_ma'] > 0.02
 
 
 def joint_positive_rules(df, i, period_start_trend):
-    return basic_signal_checks(df, i) and check_early_in_trend(df, 'indicators_mid_levels_signal', i, 'positive', period_start_trend) and check_additional_positive_indicators(df, i)
+    return basic_signal_checks(df, i) and check_early_in_trend(df, 'indicators_mid_levels_signal', i, 'positive', period_start_trend)
 
 
 def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_periods):
@@ -85,6 +90,10 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                 if signal_direction == 'positive' and df.at[i, 'current_stop_loss'] >= df.at[i, 'Low']:
                     df = exit_bullish(df, i, signal_index, 'current_stop_loss')  # exit sl
                     continue
+                # TODO: TIME BASED EXIT - delete if not relevant
+                if signal_direction == 'positive' and (i - signal_index) >= 5:
+                    df = exit_bullish(df, i, signal_index, 'Close')  # exit at end of day
+                    continue
                 if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'Open']:
                     df = exit_bearish(df, i, signal_index, 'Open')  # exit open
                     continue
@@ -115,12 +124,16 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
             # if not in position
             elif not df.at[i - 1, 'in_position']:
                 # check if i should enter a bullish position
-                if df.at[i, 'signal_direction'] == 'positive' and \
-                        ((df.at[i, 'signal_type'].startswith('joint') and joint_positive_rules(df, i, 5)) or
-                         ((df.at[i, 'signal_type'] == 'awesome_osc') and check_not_earnings_days(df, i) and df.at[i, 'distance_from_10_ma'] > 0.04)):
+                # if df.at[i, 'signal_direction'] == 'positive' and \
+                #         ((df.at[i, 'signal_type'].startswith('joint') and joint_positive_rules(df, i, 5)) or
+                #          ((df.at[i, 'signal_type'] == 'awesome_osc') and basic_signal_checks(df, i))):
+                # if df.at[i, 'signal_direction'] == 'positive' and custom_signal_checks(df, i):
+                if df.at[i, 'signal_direction'] == 'positive':
                     df.at[i, 'entry_price'] = df.at[i, 'Close']
                     df.at[i, 'current_profit_taker'] = df['High'].rolling(prev_max_min_periods).max()[i]
+                    # df.at[i, 'current_profit_taker'] = df.at[i, 'entry_price'] * 1.03
                     df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] - df.at[i, 'atr']
+                    # df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] * 0.985
                     df.at[i, 'profit_potential'] = (df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
                     df.at[i, 'loss_potential'] = (df.at[i, 'current_stop_loss'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
                     if df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price'] >= 2 * (

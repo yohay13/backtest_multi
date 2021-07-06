@@ -235,7 +235,8 @@ def check_volume_high_enough(df, i):
 
 
 def check_additional_positive_indicators(df, i):
-    return df['atr_volatility_ma'][i] < 0.04 and df['distance_from_10_ma'][i] > 0.04
+    # return df['atr_volatility_ma'][i] > 0.03 and df['atr_volatility_ma'][i] < 0.09 and df['distance_from_10_ma'][i] > 0.04
+    return df['atr_volatility_ma'][i] > 0.03 and df['atr_volatility_ma'][i] < 0.09 and df['distance_from_10_ma'][i] > -0.01 and df['distance_from_10_ma'][i] < 0.06 and df['adx'][i] > 12 and df['adx'][i] < 22
 
 
 def check_atr_volatility_low_enough(df, i):
