@@ -1,17 +1,20 @@
 
 import pandas as pd
 import numpy as np
+import seaborn as seaborn
+
 from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directory, get_data_dict_for_multiple_stocks, \
     get_data_for_stock
 from strategies import calculate_exits_column_by_atr_and_prev_max_min
 from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
     get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr, \
-    get_macd_columns_for_stock
+    get_macd_columns_for_stock, normalize_columns
 from signals import indicators_mid_levels_signal, parabolic_trending_n_periods, cross_20_ma, cross_50_ma, joint_signal, \
     macd_cross_0_signal, macd_signal_cross_signal, joint_macd_signal_cross_signal, joint_macd_cross_0_signal, \
-    awesome_oscilator
+    awesome_oscilator, calculate_correl_score_series_for_df
 import time
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 
@@ -26,7 +29,7 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
-# adjusted_tickers = ['FB', 'AAPL', 'NFLX']
+# adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'MSFT', 'TSLA']
 # stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
 
 stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
@@ -50,6 +53,9 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['ma_med_5'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 5)
     stocks_dict[ticker]['ma_med_34'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 34)
     stocks_dict[ticker]['awesome_osc'] = stocks_dict[ticker]['ma_med_5'] - stocks_dict[ticker]['ma_med_34']
+    stocks_dict[ticker]['median_ratio'] = stocks_dict[ticker]['median'] / stocks_dict[ticker]['Close']
+    stocks_dict[ticker]['ma_med_5_ratio'] = stocks_dict[ticker]['ma_med_5'] / stocks_dict[ticker]['Close']
+    stocks_dict[ticker]['ma_med_34_ratio'] = stocks_dict[ticker]['ma_med_34'] / stocks_dict[ticker]['Close']
     stocks_dict[ticker]['macd'], stocks_dict[ticker]['macd_signal'] = get_macd_columns_for_stock(stocks_dict[ticker], 12, 26, 9)
     stocks_dict[ticker]['atr'] = get_ATR_column_for_stock(stocks_dict[ticker], 14)
     stocks_dict[ticker]['distance_from_10_ma'] = get_distance_between_columns_for_stock(stocks_dict[ticker], 'Close', '10_ma')
@@ -73,7 +79,7 @@ for ticker in adjusted_tickers:
     # stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
     stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
 
-    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35)
+    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35, ticker)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
     # stocks_dict[ticker].tail(1000).plot(x="Date", y=["Close", "50_ma"])
@@ -125,6 +131,7 @@ for index, ticker in enumerate(adjusted_tickers):
     else:
         all_actions_df = pd.concat([all_actions_df, current_actions_df])
 
+
 INITIAL_POCKET_VALUE = 100
 MAX_POCKETS = 1
 pocket_list = [{
@@ -133,15 +140,18 @@ pocket_list = [{
     'ticker': ''
 }]
 num_initial_pockets = 1
+num_entered_positions = 0
 
 
-def lock_pocket(pocket_list, ticker, num_initial_pockets):
+def lock_pocket(pocket_list, ticker, num_initial_pockets, num_entered_positions):
     for pocket_index in range(len(pocket_list)):
         if pocket_list[pocket_index]['in_position'] == False:
+            num_entered_positions += 1
             pocket_list[pocket_index]['in_position'] = True
             pocket_list[pocket_index]['ticker'] = ticker
-            return pocket_index, num_initial_pockets
+            return pocket_index, num_initial_pockets, num_entered_positions, True
     # didnt find unlocked pocket - init a new one
+
     if len(pocket_list) < MAX_POCKETS:
         pocket_list.append({
             'amount': INITIAL_POCKET_VALUE,
@@ -149,7 +159,7 @@ def lock_pocket(pocket_list, ticker, num_initial_pockets):
             'ticker': ticker
         })
         num_initial_pockets += 1
-    return len(pocket_list) - 1, num_initial_pockets
+    return len(pocket_list) - 1, num_initial_pockets, num_entered_positions, False
 
 
 def merge_unlocked_pockets(pocket_list):
@@ -184,19 +194,49 @@ def unlock_pocket(pocket_list, ticker, pct_gains):
 all_actions_df['pocket_amount'] = ''
 all_actions_df['pocket_index'] = ''
 all_actions_df['total_pockets_value'] = ''
+all_actions_df['position_score'] = ''
+all_actions_df = normalize_columns(all_actions_df, ['Volume', 'ma_volume', 'median_ratio', 'ma_med_5_ratio', 'ma_med_34_ratio', 'awesome_osc',
+                            'macd', 'macd_signal', 'distance_from_10_ma', 'adx', '+di', '-di', 'rsi', 'stochastic_k',
+                            'stochastic_d', 'atr_volatility', 'atr_volatility_ma'])
+all_actions_df['position_score'] = calculate_correl_score_series_for_df(all_actions_df)
 all_actions_df = all_actions_df.sort_values(by=['Date'])
 all_actions_df = all_actions_df.reset_index(drop=True)
+# TODO: comment out only to calculate correl again >>
+only_entrances_df = all_actions_df.copy()[all_actions_df['action_return_on_signal_index'] != '']
+total_actions_before_one_per_day = len(only_entrances_df)
+best_position_ids = only_entrances_df.sort_values('position_score', ascending=False).drop_duplicates(['Date']).sort_values(['Date']).reset_index(drop=True)['position_id']
+all_actions_df = all_actions_df[all_actions_df['position_id'].isin(best_position_ids)]
+all_actions_df = all_actions_df.sort_values(by=['Date'])
+all_actions_df = all_actions_df.reset_index(drop=True)
+# TODO: << comment out only to calculate correl again
 for row in range(len(all_actions_df)):
     if all_actions_df.at[row, 'signal'] != '':
-        locked_pocket_index, num_initial_pockets = lock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], num_initial_pockets)
-        all_actions_df.at[row, 'pocket_amount'] = pocket_list[locked_pocket_index]['amount']
-        all_actions_df.at[row, 'pocket_index'] = locked_pocket_index
+        locked_pocket_index, num_initial_pockets, num_entered_positions, entered = lock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], num_initial_pockets, num_entered_positions)
+        if entered:
+            all_actions_df.at[row, 'pocket_amount'] = pocket_list[locked_pocket_index]['amount']
+            all_actions_df.at[row, 'pocket_index'] = locked_pocket_index
     if all_actions_df.at[row, 'exits'] != '':
         pocket_list = unlock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], all_actions_df.at[row, 'action_return'])
         all_actions_df.at[row, 'total_pockets_value'] = sum(item['amount'] for item in pocket_list)
+    print(all_actions_df.at[row, 'Date'])
     print(pocket_list)
 
 all_actions_df = all_actions_df[all_actions_df['action_return_on_signal_index'] != '']
+# TODO: comment out to not show correl plots >>
+# all_actions_df['correct'] = all_actions_df['action_return_on_signal_index'] > 0.006
+# classes = all_actions_df['correct']
+# features = all_actions_df[['Volume_norm', 'ma_volume_norm', 'median_ratio_norm', 'ma_med_5_ratio_norm', 'ma_med_34_ratio_norm', 'awesome_osc_norm',
+#                             'macd_norm', 'macd_signal_norm', 'distance_from_10_ma_norm', 'adx_norm', '+di_norm', '-di_norm', 'rsi_norm', 'stochastic_k_norm',
+#                             'stochastic_d_norm', 'atr_volatility_norm', 'atr_volatility_ma_norm']]
+# data = pd.concat([classes, features.iloc[:,16:]], axis=1)
+# data = pd.melt(data, id_vars="correct",
+#  var_name="features",
+#  value_name='value')
+# plt.figure(figsize=(16,8))
+# sns.violinplot(x="features", y="value", hue="correct", data=data, split=True,
+#  inner="quart")
+# plt.xticks(rotation=90)
+# TODO: << comment out to not show correl plots
 all_actions_df.to_csv(f'stocks_csvs_new/all_actions_df.csv', index=False)
 
 sum_init_pockets = num_initial_pockets * INITIAL_POCKET_VALUE
@@ -206,28 +246,42 @@ print(f'pocket_list: {pocket_list}')
 print(f'sum of all initial pockets {sum_init_pockets}')
 print(f'current pockets value {sum_end_pockets}')
 print(f'total gains pct: {total_gains}')
+print(f'number of potential positions: {total_actions_before_one_per_day}')
+print(f'number of potential positions after clean for 1 per day: {len(all_actions_df)}')
+print(f'number of entered positions: {num_entered_positions}')
 
 
 def merge_returns_with_same_date(df):
     df_copy = df.copy()
     df_copy.loc[:, 'action_return_on_signal_index'] = pd.to_numeric(df_copy['action_return_on_signal_index'])
+    df_copy.loc[:, 'pocket_amount'] = pd.to_numeric(df_copy['pocket_amount'])
     return df_copy.groupby(by=["Date"]).mean()
 
 
-sp500 = get_data_for_stock('SPY', 'D', time.time(), time)
+sp500 = get_data_for_stock('SPY', 'D', time.time(), time).sort_values(by=['Date'])
 
-all_actions_df_merged = merge_returns_with_same_date(all_actions_df[['action_return_on_signal_index', 'Date']])
+all_actions_df_merged = merge_returns_with_same_date(all_actions_df[['action_return_on_signal_index', 'Date', 'pocket_amount']]).sort_values(by=['Date'])
 
-algo_gains_df = pd.concat([sp500.set_index('Date')[['Close']], all_actions_df_merged[['action_return_on_signal_index']]], axis=1)
+algo_gains_df = pd.concat([sp500.set_index('Date')[['Close']], all_actions_df_merged[['action_return_on_signal_index', 'pocket_amount']]], axis=1)
 algo_gains_df['action_return_on_signal_index'] = algo_gains_df['action_return_on_signal_index'].fillna(0)
-algo_gains_df['algo_value'] = sp500['Close'][0]
-# should make a dataframe with total gains to date and plot against total gains per sp500. first price of sp500 should be first price of algo
-for action_index in range(len(algo_gains_df)):
-    if action_index == 1:
-        continue
-    algo_gains_df['algo_value'][action_index] = algo_gains_df['algo_value'][action_index - 1] + algo_gains_df['algo_value'][action_index - 1] * algo_gains_df['action_return_on_signal_index'][action_index]
+algo_gains_df['pocket_amount'] = algo_gains_df['pocket_amount'].fillna(0)
+algo_gains_df = algo_gains_df.loc[algo_gains_df['pocket_amount'] != 0]
 
-algo_gains_df[['Close', 'algo_value']].plot(figsize=(16, 8))
+STARTER_AMOUNT = 100.0
+algo_gains_df['algo_value'] = STARTER_AMOUNT
+algo_gains_df['sp_value'] = STARTER_AMOUNT
+algo_gains_df = algo_gains_df.reset_index().sort_values(by=['Date'])
+for action_index in range(len(algo_gains_df)):
+    if action_index == 0:
+        algo_gains_df.at[action_index, 'algo_value'] = STARTER_AMOUNT + STARTER_AMOUNT * algo_gains_df.at[action_index, 'action_return_on_signal_index']
+        algo_gains_df.at[action_index, 'sp_value'] = STARTER_AMOUNT
+        continue
+    algo_gains_df.at[action_index, 'algo_value'] = algo_gains_df.at[action_index - 1, 'algo_value'] + algo_gains_df.at[action_index - 1, 'algo_value'] * algo_gains_df.at[action_index, 'action_return_on_signal_index']
+    algo_gains_df.at[action_index, 'sp_value'] = algo_gains_df.at[action_index - 1, 'sp_value'] + algo_gains_df.at[action_index - 1, 'sp_value'] * \
+                                                 ((algo_gains_df.at[action_index, 'Close'] - algo_gains_df.at[action_index - 1, 'Close']) / algo_gains_df.at[action_index - 1, 'Close'])
+
+algo_gains_df = algo_gains_df.set_index('Date').sort_values(by=['Date'])
+algo_gains_df[['sp_value', 'algo_value']].plot(figsize=(16, 8))
 plt.show()
 
 algo_gains_df.reset_index().to_csv(f'stocks_csvs_new/algo_gains_df.csv', index=False)
