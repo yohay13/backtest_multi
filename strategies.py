@@ -11,7 +11,7 @@ def get_position_direction_and_index(df, i, signal_column_name, in_position_colu
     return 'ERR', -1
 
 
-def exit_bullish(stock_df, current_index, signal_index, trigger_column):
+def exit_bullish(stock_df, current_index, signal_index, trigger_column, time_based_exit=False):
     df = stock_df.copy()
     df.at[current_index, 'exits'] = 'Exit Buy'
     df.at[current_index, 'action_return'] = (df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
@@ -19,10 +19,12 @@ def exit_bullish(stock_df, current_index, signal_index, trigger_column):
     df.at[signal_index, 'action_return_on_signal_index'] = df['action_return'][current_index]
     df.at[signal_index, 'action_length'] = current_index - signal_index
     df.at[current_index, 'in_position'] = False
+    if time_based_exit:
+        df.at[current_index, 'time_based_exit'] = True
     return df
 
 
-def exit_bearish(stock_df, current_index, signal_index, trigger_column):
+def exit_bearish(stock_df, current_index, signal_index, trigger_column, time_based_exit=False):
     df = stock_df.copy()
     df.at[current_index, 'exits'] = 'Exit Sell'
     df[current_index, 'action_return'] = -(df[trigger_column][current_index] - df['Close'][signal_index]) / df['Close'][
@@ -30,6 +32,8 @@ def exit_bearish(stock_df, current_index, signal_index, trigger_column):
     df.at[signal_index, 'action_return_on_signal_index'] = df['action_return'][current_index]
     df.at[signal_index, 'action_length'] = current_index - signal_index
     df.at[current_index, 'in_position'] = False
+    if time_based_exit:
+        df.at[current_index, 'time_based_exit'] = True
     return df
 
 
@@ -69,6 +73,7 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
     df['action_length'] = ''
     df['profit_potential'] = ''
     df['loss_potential'] = ''
+    df['time_based_exit'] = ''
     position_counter = 1
     for i in range(len(df)):
         if i > 1:
@@ -95,11 +100,11 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                     continue
                 # TODO: TIME BASED EXIT - delete if not relevant
                 if signal_direction == 'positive' and (i - signal_index) >= 5:
-                    df = exit_bullish(df, i, signal_index, 'Close')  # exit at end of day
+                    df = exit_bullish(df, i, signal_index, 'Close', True)  # exit at end of day
                     continue
                 # TODO: TIME BASED EXIT - delete if not relevant. check loss or high profit mid-action length
                 if signal_direction == 'positive' and (i - signal_index) >= 3 and (df.at[i, 'Close'] < df.at[i, 'entry_price'] or (df.at[i, 'Close'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price'] > 0.025):
-                    df = exit_bullish(df, i, signal_index, 'Close')  # exit at end of day
+                    df = exit_bullish(df, i, signal_index, 'Close', True)  # exit at end of day
                     continue
                 if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'Open']:
                     df = exit_bearish(df, i, signal_index, 'Open')  # exit open
