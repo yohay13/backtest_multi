@@ -3,6 +3,8 @@
 import numpy as np
 from stocktrends import Renko
 import statsmodels.api as sm
+from sklearn.preprocessing import MinMaxScaler
+
 
 def get_ATR_column_for_stock(stock_df, period, only_column=True):
     "function to calculate True Range and Average True Range"
@@ -191,3 +193,13 @@ def stochastic(stock_df,periods,smother):
     df['%K'] = (df['Close'] - df['14-low']) * 100 / (df['14-high'] - df['14-low'])
     df['%D'] = df['%K'].rolling(smother).mean()
     return df['%K'], df['%D']
+
+
+def normalize_columns(df, columns_list):
+    temp_df = df.copy()
+    for col in columns_list:
+        scaler = MinMaxScaler((-1, 1))
+        temp_df[f'temp_{col}'] = df[col].clip(df[col].quantile(.05), df[col].quantile(.95))
+        temp_df[[col]] = scaler.fit_transform(temp_df[[f'temp_{col}']])
+        df[f'{col}_norm'] = temp_df[col]
+    return df
