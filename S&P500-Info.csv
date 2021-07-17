@@ -18,7 +18,7 @@
 16,ARE,Alexandria Real Estate Equities,reports,Real Estate,Office REITs,"Pasadena, California",2017-03-20,1035443,1994
 17,ALXN,Alexion Pharmaceuticals,reports,Health Care,Pharmaceuticals,"Boston, Massachusetts",2012-05-25,899866,1992
 18,ALGN,Align Technology,reports,Health Care,Health Care Supplies,"San Jose, California",2017-06-19,1097149,1997
-19,ALLE,Allegion,reports,Industrials,Building Products,"Dublin, Ireland",2013-12-02,1579241,1908
+19,ALLE,Allegion,reports,Industrials,Building Products,"New York City, New York",2013-12-02,1579241,1908
 20,LNT,Alliant Energy,reports,Utilities,Electric Utilities,"Madison, Wisconsin",2016-07-01,352541,1917
 21,ALL,Allstate Corp,reports,Financials,Property & Casualty Insurance,"Northfield Township, Illinois",1995-07-13,899051,1931
 22,GOOGL,Alphabet (Class A),reports,Communication Services,Interactive Media & Services,"Mountain View, California",2014-04-03,1652044,1998
@@ -41,7 +41,7 @@
 39,ADI,Analog Devices,reports,Information Technology,Semiconductors,"Norwood, Massachusetts",1999-10-12,6281,1965
 40,ANSS,Ansys,reports,Information Technology,Application Software,"Canonsburg, Pennsylvania",2017-06-19,1013462,1969
 41,ANTM,Anthem,reports,Health Care,Managed Health Care,"Indianapolis, Indiana",2002-07-25,1156039,2014 (1946)
-42,AON,Aon,reports,Financials,Insurance Brokers,"London, England",1996-04-23,315293,1982 (1919)
+42,AON,Aon,reports,Financials,Insurance Brokers,"London, UK",1996-04-23,315293,1982 (1919)
 43,AOS,A. O. Smith,reports,Industrials,Building Products,"Milwaukee, Wisconsin",2017-07-26,91142,1916
 44,APA,APA Corporation,reports,Energy,Oil & Gas Exploration & Production,"Houston, Texas",1997-07-28,6769,1954
 45,AAPL,Apple,reports,Information Technology,"Technology Hardware, Storage & Peripherals","Cupertino, California",1982-11-30,320193,1977
@@ -237,7 +237,7 @@
 235,HWM,Howmet Aerospace,reports,Industrials,Aerospace & Defense,"Pittsburgh, Pennsylvania",1964-03-31,4281,2016
 236,HPQ,HP,reports,Information Technology,"Technology Hardware, Storage & Peripherals","Palo Alto, California",1974-12-31,47217,1939 (2015)
 237,HUM,Humana,reports,Health Care,Managed Health Care,"Louisville, Kentucky",,49071,1961
-238,HBAN,Huntington Bancshares,reports,Financials,Regional Banks,"Columbus, Ohio",,49196,1866
+238,HBAN,Huntington Bancshares,reports,Financials,Regional Banks,"Columbus, Ohio; Detroit, Michigan",,49196,1866
 239,HII,Huntington Ingalls Industries,reports,Industrials,Aerospace & Defense,"Newport News, Virginia",2018-01-03,1501585,2011
 240,IEX,IDEX Corporation,reports,Industrials,Industrial Machinery,"Lake Forest, Illinois",2019-08-09,832101,1988
 241,IDXX,Idexx Laboratories,reports,Health Care,Health Care Equipment,"Westbrook, Maine",2017-01-05,874716,1983
@@ -282,7 +282,7 @@
 280,LRCX,Lam Research,reports,Information Technology,Semiconductor Equipment,"Fremont, California",2012-06-29,707549,1980
 281,LW,Lamb Weston,reports,Consumer Staples,Packaged Foods & Meats,"Eagle, Idaho",2018-12-03,1679273,2016 (1950)
 282,LVS,Las Vegas Sands,reports,Consumer Discretionary,Casinos & Gaming,"Las Vegas, Nevada",2019-10-03,1300514,1988
-283,LEG,Leggett & Platt,reports,Consumer Discretionary,Home Furnishings,"Carthage, Missouri",,58492,1883
+283,LEG,Leggett & Platt,reports,Consumer Discretionary,Home Furnishings,"Carthage, Missouri",1999-10-14,58492,1883
 284,LDOS,Leidos,reports,Industrials,Diversified Support Services,"Reston, Virginia",2019-08-09,1336920,1969
 285,LEN,Lennar,reports,Consumer Discretionary,Homebuilding,"Miami, Florida",2005-10-04,920760,1954
 286,LLY,Eli Lilly & Co,reports,Health Care,Pharmaceuticals,"Indianapolis, Indiana",1970-12-31,59478,1876
@@ -304,7 +304,7 @@
 302,MLM,Martin Marietta Materials,reports,Materials,Construction Materials,"Raleigh, North Carolina",2014-07-02,916076,1993
 303,MAS,Masco,reports,Industrials,Building Products,"Livonia, Michigan",1981-06-30,62996,1929
 304,MA,Mastercard,reports,Information Technology,Data Processing & Outsourced Services,"Harrison, New York",2008-07-18,1141391,1966
-305,MKC,McCormick & Company,reports,Consumer Staples,Packaged Foods & Meats,"Hunt Valley, Maryland",,63754,1889
+305,MKC,McCormick & Company,reports,Consumer Staples,Packaged Foods & Meats,"Hunt Valley, Maryland",2003-03-20,63754,1889
 306,MXIM,Maxim Integrated,reports,Information Technology,Semiconductors,"San Jose, California",2018-12-03,743316,1983
 307,MCD,McDonald's,reports,Consumer Discretionary,Restaurants,"Chicago, Illinois",1970-06-30,63908,1940
 308,MCK,McKesson Corporation,reports,Health Care,Health Care Distributors,"Irving, Texas",,927653,1833
@@ -318,7 +318,7 @@
 316,MSFT,Microsoft,reports,Information Technology,Systems Software,"Redmond, Washington",1994-06-01,789019,1975
 317,MAA,Mid-America Apartments,reports,Real Estate,Residential REITs,"Memphis, Tennessee",2016-12-02,912595,1977
 318,MHK,Mohawk Industries,reports,Consumer Discretionary,Home Furnishings,"Calhoun, Georgia",2013-12-23,851968,1878
-319,TAP,Molson Coors Beverage Company,reports,Consumer Staples,Brewers,"Denver, Colorado",1976-06-30,24545,"2005 (Molson 1786, Coors 1873)"
+319,TAP,Molson Coors Beverage Company,reports,Consumer Staples,Brewers,"Chicago, Illinois",1976-06-30,24545,"2005 (Molson 1786, Coors 1873)"
 320,MDLZ,Mondelez International,reports,Consumer Staples,Packaged Foods & Meats,"Chicago, Illinois",2012-10-02,1103982,2012
 321,MPWR,Monolithic Power Systems,reports,Information Technology,Semiconductors,"Kirkland, Washington",2021-02-12,1280452,1997
 322,MNST,Monster Beverage,reports,Consumer Staples,Soft Drinks,"Corona, California",2012-06-28,865752,2012 (1935)
@@ -452,7 +452,7 @@
 450,TFC,Truist Financial,reports,Financials,Regional Banks,"Charlotte, North Carolina",1997-12-04,92230,1872
 451,TWTR,Twitter,reports,Communication Services,Interactive Media & Services,"San Francisco, California",2018-06-07,1418091,2006
 452,TYL,Tyler Technologies,reports,Information Technology,Application Software,"Plano, Texas",2020-06-22,860731,1966
-453,TSN,Tyson Foods,reports,Consumer Staples,Packaged Foods & Meats,"Springdale, Arkansas",,100493,1935
+453,TSN,Tyson Foods,reports,Consumer Staples,Packaged Foods & Meats,"Springdale, Arkansas",2005-08-10,100493,1935
 454,UDR,UDR,reports,Real Estate,Residential REITs,"Highlands Ranch, Colorado",2016-03-07,74208,1972
 455,ULTA,Ulta Beauty,reports,Consumer Discretionary,Specialty Stores,"Bolingbrook, Illinois",2016-04-18,1403568,1990
 456,USB,U.S. Bancorp,reports,Financials,Diversified Banks,"Minneapolis, Minnesota",,36104,1968
