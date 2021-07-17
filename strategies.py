@@ -55,10 +55,11 @@ def joint_positive_rules(df, i, period_start_trend):
     return basic_signal_checks(df, i) and check_early_in_trend(df, 'indicators_mid_levels_signal', i, 'positive', period_start_trend)
 
 
-def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_periods):
+def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_periods, ticker):
     df = stock_df.copy()
     df['exits'] = ''
     df['action_return'] = ''
+    df['position_id'] = ''
     df['action_return_on_signal_index'] = ''
     df['current_stop_loss'] = ''
     df['current_profit_taker'] = ''
@@ -68,6 +69,7 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
     df['action_length'] = ''
     df['profit_potential'] = ''
     df['loss_potential'] = ''
+    position_counter = 1
     for i in range(len(df)):
         if i > 1:
             # check in position
@@ -76,6 +78,7 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                 df.at[i, 'current_profit_taker'] = df.at[i - 1, 'current_profit_taker']
                 df.at[i, 'entry_price'] = df.at[i - 1, 'entry_price']
                 df.at[i, 'in_position'] = df.at[i - 1, 'in_position']
+                df.at[i, 'position_id'] = df.at[i - 1, 'position_id']
                 # check for exit
                 signal_direction, signal_index = get_position_direction_and_index(df, i, 'signal_direction', 'in_position')
                 if signal_direction == 'positive' and df.at[i, 'current_profit_taker'] <= df.at[i, 'Open']:
@@ -92,6 +95,10 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                     continue
                 # TODO: TIME BASED EXIT - delete if not relevant
                 if signal_direction == 'positive' and (i - signal_index) >= 5:
+                    df = exit_bullish(df, i, signal_index, 'Close')  # exit at end of day
+                    continue
+                # TODO: TIME BASED EXIT - delete if not relevant. check loss or high profit mid-action length
+                if signal_direction == 'positive' and (i - signal_index) >= 3 and (df.at[i, 'Close'] < df.at[i, 'entry_price'] or (df.at[i, 'Close'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price'] > 0.025):
                     df = exit_bullish(df, i, signal_index, 'Close')  # exit at end of day
                     continue
                 if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'Open']:
@@ -141,6 +148,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                         # enter position
                         df.at[i, 'in_position'] = True
                         df.at[i, 'signal'] = 'Bullish'
+                        df.at[i, 'position_id'] = f'{position_counter}_{ticker}'
+                        position_counter += 1
                     else:
                         df.at[i, 'in_position'] = False
                     continue
@@ -156,6 +165,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                         # enter position
                         df.at[i, 'in_position'] = True
                         df.at[i, 'signal'] = 'Bearish'
+                        df.at[i, 'position_id'] = f'{position_counter}_{ticker}'
+                        position_counter += 1
                     else:
                         df.at[i, 'in_position'] = False
                     continue
