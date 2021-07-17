@@ -253,3 +253,7 @@ def check_trend_not_down(df, i):
 
 def check_trend_not_up(df, i):
     return check_column_trend(df, 'stochastic_k', i) != 'UP'
+
+
+def calculate_correl_score_series_for_df(df):
+    return df['ma_med_5_ratio_norm']*0.11+df['distance_from_10_ma_norm']*-0.17+df['-di_norm']*0.1+df['atr_volatility_norm']*0.065
