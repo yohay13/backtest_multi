@@ -11,7 +11,7 @@ from indicators import get_ma_column_for_stock, get_distance_between_columns_for
     get_macd_columns_for_stock, normalize_columns
 from signals import indicators_mid_levels_signal, parabolic_trending_n_periods, cross_20_ma, cross_50_ma, joint_signal, \
     macd_cross_0_signal, macd_signal_cross_signal, joint_macd_signal_cross_signal, joint_macd_cross_0_signal, \
-    awesome_oscilator, calculate_correl_score_series_for_df
+    awesome_oscilator, calculate_correl_score_series_for_df, cumulative_rsi_signal
 import time
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -48,6 +48,7 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['10_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 10)
     stocks_dict[ticker]['20_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 20)
     stocks_dict[ticker]['50_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 50)
+    stocks_dict[ticker]['200_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 200)
     stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 20)
     stocks_dict[ticker]['median'] = (stocks_dict[ticker]['High'] + stocks_dict[ticker]['Low']) / 2
     stocks_dict[ticker]['ma_med_5'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 5)
@@ -60,7 +61,8 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['atr'] = get_ATR_column_for_stock(stocks_dict[ticker], 14)
     stocks_dict[ticker]['distance_from_10_ma'] = get_distance_between_columns_for_stock(stocks_dict[ticker], 'Close', '10_ma')
     stocks_dict[ticker]['adx'], stocks_dict[ticker]['+di'], stocks_dict[ticker]['-di'] = get_adx_column_for_stock(stocks_dict[ticker], 14)
-    stocks_dict[ticker]['rsi'] = rsi(stocks_dict[ticker], 14)
+    stocks_dict[ticker]['adx_ma_med_5_rat'] = stocks_dict[ticker]['adx']*stocks_dict[ticker]['ma_med_5_ratio']
+    stocks_dict[ticker]['rsi'] = rsi(stocks_dict[ticker], 2) # changed from 14
     stocks_dict[ticker]['stochastic_k'], stocks_dict[ticker]['stochastic_d'] = stochastic(stocks_dict[ticker], 14, 3)
     stocks_dict[ticker]['atr_volatility'], stocks_dict[ticker]['atr_volatility_ma'] = get_volatility_from_atr(stocks_dict[ticker], 14)
     stocks_dict[ticker]['signal_type'] = ''
@@ -72,14 +74,15 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['cross_50_signal'] = ''
     stocks_dict[ticker]['cross_50_direction'] = ''
     # signal_type and signal_direction columns are the columns that determine the actual orders!
-    stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'indicators_mid_level_direction', 'indicators_mid_levels_signal')
-    stocks_dict[ticker] = cross_20_ma(stocks_dict[ticker], 'cross_20_direction', 'cross_20_signal')
-    stocks_dict[ticker] = cross_50_ma(stocks_dict[ticker], 'cross_50_direction', 'cross_50_signal')
+    # stocks_dict[ticker] = indicators_mid_levels_signal(stocks_dict[ticker], 'indicators_mid_level_direction', 'indicators_mid_levels_signal')
+    # stocks_dict[ticker] = cross_20_ma(stocks_dict[ticker], 'cross_20_direction', 'cross_20_signal')
+    # stocks_dict[ticker] = cross_50_ma(stocks_dict[ticker], 'cross_50_direction', 'cross_50_signal')
 
     # stocks_dict[ticker] = joint_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
     stocks_dict[ticker] = awesome_oscilator(stocks_dict[ticker], 'signal_direction', 'signal_type')
+    # stocks_dict[ticker] = cumulative_rsi_signal(stocks_dict[ticker], 'signal_direction', 'signal_type')
 
-    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 35, ticker)
+    stocks_dict[ticker] = calculate_exits_column_by_atr_and_prev_max_min(stocks_dict[ticker], 70, ticker)
     stocks_dict[ticker] = stocks_dict[ticker].reset_index()
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
     # stocks_dict[ticker].tail(1000).plot(x="Date", y=["Close", "50_ma"])
@@ -117,6 +120,10 @@ for index, ticker in enumerate(adjusted_tickers):
         continue
     all_stocks_data_df['pct_correct_actions'][index] = all_stocks_data_df['total_correct_actions'][index] / all_stocks_data_df['total_actions'][index]
 all_stocks_data_df.to_csv(f'stocks_csvs_new/all_stocks_data.csv', index=False)
+
+
+# convert stocks data to one df, normalize, and put together as a dict
+
 
 all_actions_df = pd.DataFrame()
 for index, ticker in enumerate(adjusted_tickers):
@@ -195,20 +202,20 @@ all_actions_df['pocket_amount'] = ''
 all_actions_df['pocket_index'] = ''
 all_actions_df['total_pockets_value'] = ''
 all_actions_df['position_score'] = ''
+all_actions_df = all_actions_df.sort_values(by=['Date'])
+all_actions_df = all_actions_df.reset_index(drop=True)
 all_actions_df = normalize_columns(all_actions_df, ['Volume', 'ma_volume', 'median_ratio', 'ma_med_5_ratio', 'ma_med_34_ratio', 'awesome_osc',
                             'macd', 'macd_signal', 'distance_from_10_ma', 'adx', '+di', '-di', 'rsi', 'stochastic_k',
                             'stochastic_d', 'atr_volatility', 'atr_volatility_ma'])
-all_actions_df['position_score'] = calculate_correl_score_series_for_df(all_actions_df)
-all_actions_df = all_actions_df.sort_values(by=['Date'])
-all_actions_df = all_actions_df.reset_index(drop=True)
-# TODO: comment out only to calculate correl again >>
+all_actions_df = calculate_correl_score_series_for_df(all_actions_df)
 only_entrances_df = all_actions_df.copy()[all_actions_df['action_return_on_signal_index'] != '']
 total_actions_before_one_per_day = len(only_entrances_df)
-best_position_ids = only_entrances_df.sort_values('position_score', ascending=False).drop_duplicates(['Date']).sort_values(['Date']).reset_index(drop=True)['position_id']
+# TODO: comment out this section only to calculate correl again >>
+best_position_ids = only_entrances_df.sort_values('position_score_norm', ascending=False).drop_duplicates(['Date']).sort_values(['Date']).reset_index(drop=True)['position_id']
 all_actions_df = all_actions_df[all_actions_df['position_id'].isin(best_position_ids)]
 all_actions_df = all_actions_df.sort_values(by=['Date'])
 all_actions_df = all_actions_df.reset_index(drop=True)
-# TODO: << comment out only to calculate correl again
+# TODO: << comment out this section only to calculate correl again
 for row in range(len(all_actions_df)):
     if all_actions_df.at[row, 'signal'] != '':
         locked_pocket_index, num_initial_pockets, num_entered_positions, entered = lock_pocket(pocket_list, all_actions_df.at[row, 'ticker'], num_initial_pockets, num_entered_positions)

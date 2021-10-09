@@ -90,9 +90,9 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                     df = exit_bullish(df, i, signal_index, 'Close', True)  # exit at end of day
                     continue
                 # TODO: TIME BASED EXIT - delete if not relevant. check loss or high profit mid-action length
-                if signal_direction == 'positive' and (i - signal_index) >= 3 and (df.at[i, 'Close'] < df.at[i, 'entry_price'] or (df.at[i, 'Close'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price'] > 0.025):
-                    df = exit_bullish(df, i, signal_index, 'Close', True)  # exit at end of day
-                    continue
+                # if signal_direction == 'positive' and (i - signal_index) >= 3 and (df.at[i, 'Close'] < df.at[i, 'entry_price'] or (df.at[i, 'Close'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price'] > 0.025):
+                #     df = exit_bullish(df, i, signal_index, 'Close', True)  # exit at end of day
+                #     continue
                 if signal_direction == 'negative' and df.at[i, 'current_stop_loss'] <= df.at[i, 'Open']:
                     df = exit_bearish(df, i, signal_index, 'Open')  # exit open
                     continue
@@ -125,10 +125,8 @@ def calculate_exits_column_by_atr_and_prev_max_min(stock_df, prev_max_min_period
                 # check if i should enter a bullish position
                 if df.at[i, 'signal_direction'] == 'positive':
                     df.at[i, 'entry_price'] = df.at[i, 'Close']
-                    df.at[i, 'current_profit_taker'] = df['High'].rolling(prev_max_min_periods).max()[i]
-                    # df.at[i, 'current_profit_taker'] = df.at[i, 'entry_price'] * 1.03
-                    df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] - df.at[i, 'atr']
-                    # df.at[i, 'current_stop_loss'] = df.at[i, 'entry_price'] * 0.985
+                    df.at[i, 'current_profit_taker'] = max(df['High'].rolling(prev_max_min_periods).max()[i], df.at[i, 'entry_price'] + df.at[i, 'atr'] * 2)
+                    df.at[i, 'current_stop_loss'] = min(df['Low'].rolling(5).min()[i], df.at[i, 'entry_price'] - df.at[i, 'atr'])
                     df.at[i, 'profit_potential'] = (df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
                     df.at[i, 'loss_potential'] = (df.at[i, 'current_stop_loss'] - df.at[i, 'entry_price']) / df.at[i, 'entry_price']
                     if df.at[i, 'current_profit_taker'] - df.at[i, 'entry_price'] >= 2 * (
