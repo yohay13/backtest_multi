@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import seaborn as seaborn
@@ -29,10 +28,10 @@ adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
 
-# adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'MSFT', 'TSLA']
-# stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, 'D', time) # interval should be: D, W, 30min, 5min etc.
+# adjusted_tickers = ['FB', 'AAPL']
+stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, time)
 
-stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
+# stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 # adjusted_tickers = less_tickers
 # stocks_dict = { your_key: stocks_dict[your_key] for your_key in less_tickers }
 
