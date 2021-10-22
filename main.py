@@ -3,11 +3,11 @@ import numpy as np
 import seaborn as seaborn
 
 from data_fetcher import get_sp500_list, get_data_dict_for_all_stocks_in_directory, get_data_dict_for_multiple_stocks, \
-    get_data_for_stock
+    get_data_for_stock, get_stock_data_trade_daily_alpha_vantage
 from strategies import calculate_exits_column_by_atr_and_prev_max_min
 from indicators import get_ma_column_for_stock, get_distance_between_columns_for_stock, \
     get_adx_column_for_stock, rsi, stochastic, get_ATR_column_for_stock, get_volatility_from_atr, \
-    get_macd_columns_for_stock, normalize_columns
+    get_macd_columns_for_stock, normalize_columns, get_beta_column
 from signals import indicators_mid_levels_signal, parabolic_trending_n_periods, cross_20_ma, cross_50_ma, joint_signal, \
     macd_cross_0_signal, macd_signal_cross_signal, joint_macd_signal_cross_signal, joint_macd_cross_0_signal, \
     awesome_oscilator, calculate_correl_score_series_for_df, cumulative_rsi_signal
@@ -23,13 +23,15 @@ tickers = get_sp500_list()
 
 adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK' and elem != 'HLT' and elem != 'DD' and elem != 'CMCSA' and elem != 'COG' and elem != 'WBA' and elem != 'KMX' and elem != 'ADP' and elem != 'STZ' and elem != 'IQV'] # there were stock splits
 adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
+adjusted_tickers = adjusted_tickers + ['SPY']
 # yahoo finance screener - mega caps only, tech, energey and finance
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'BAC', 'C', 'TWTR', 'MA', 'TSM', 'V', 'JPM', 'NVDA', 'XOM', 'CVX']
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
+# adjusted_tickers = ['AAPL', 'FB', 'SPY']
 
-# adjusted_tickers = ['FB', 'AAPL']
 stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, time)
+spy_df = stocks_dict['SPY']
 
 # stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
 # adjusted_tickers = less_tickers
@@ -49,6 +51,8 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker]['50_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 50)
     stocks_dict[ticker]['200_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 200)
     stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 20)
+    stocks_dict[ticker]['beta'] = get_beta_column(stocks_dict[ticker], spy_df, 100)
+    stocks_dict[ticker]['10_beta_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'beta', 10)
     stocks_dict[ticker]['median'] = (stocks_dict[ticker]['High'] + stocks_dict[ticker]['Low']) / 2
     stocks_dict[ticker]['ma_med_5'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 5)
     stocks_dict[ticker]['ma_med_34'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 34)
