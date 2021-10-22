@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import numpy as np
+import pandas as pd
 from stocktrends import Renko
 import statsmodels.api as sm
 from sklearn.preprocessing import MinMaxScaler
@@ -193,6 +194,30 @@ def stochastic(stock_df,periods,smother):
     df['%K'] = (df['Close'] - df['14-low']) * 100 / (df['14-high'] - df['14-low'])
     df['%D'] = df['%K'].rolling(smother).mean()
     return df['%K'], df['%D']
+
+
+def roll(df, w):
+    for i in range(df.shape[0] - w + 1):
+        yield pd.DataFrame(df.values[i:i+w, :], df.index[i:i+w], df.columns)
+
+
+def beta(df, benchmark_col_name):
+    # If the market values are not passed,
+    # I'll assume they are located in a column
+    # named 'Market'.  If not, this will fail.
+    market = df[benchmark_col_name]
+    X = market.values.reshape(-1, 1)
+    X = np.concatenate([np.ones_like(X), X], axis=1)
+    b = np.linalg.pinv(X.T.dot(X)).dot(X.T).dot(df.values)
+    return pd.Series(b[1], df.columns, name=df.index[-1])
+
+
+def get_beta_column(stock_df, benchmark_df, period):
+    stock_df['benchmark_close'] = benchmark_df['Close']
+    stock_df = stock_df[['Close', 'benchmark_close']]
+    betas = pd.concat([beta(sdf, 'benchmark_close') for sdf in roll(stock_df.pct_change().dropna(), period)], axis=1).T
+    stock_df['Beta'] = betas['Close']
+    return stock_df['Beta']
 
 
 def normalize_columns(df, columns_list):
