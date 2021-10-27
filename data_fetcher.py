@@ -95,7 +95,7 @@ async def get_stock_data_trade_daily_alpha_vantage(ticker):
     data = data[['timestamp', '1. open', '2. high', '3. low', '4. close', '5. adjusted close', '6. volume']]
     data.columns = ["Date", "Open","High","Low","Close","Adjusted_Close","Volume"]
     data = data.iloc[::-1].reset_index(drop=True)
-    data = data.iloc[-(252*4):].reset_index(drop=True) # TODO: 4 years of data
+    data = data.iloc[-(252*4):].reset_index(drop=True) # TODO: 4 years of data [[[[ should be -252*4 ]]]]
     df = convert_columns_to_adjusted(data)
     return ticker, df
 
@@ -120,7 +120,8 @@ def add_earnings_dates_to_stock(stock_df, earnings_json):
 
 def get_data_dict_for_multiple_stocks(tickers, time_module):
     ohlc_intraday = {} # dictionary with ohlc value for each stock
-    api_usage_limit_per_minute = 150
+    # api_usage_limit_per_minute = 150
+    api_usage_limit_per_minute = 1
     total_number_of_stocks = len(tickers)
     total_batches_number = math.ceil(total_number_of_stocks / api_usage_limit_per_minute)
     all_results = []
@@ -129,7 +130,8 @@ def get_data_dict_for_multiple_stocks(tickers, time_module):
         tasks = [get_stock_data_trade_daily_alpha_vantage(ticker) for ticker in tickers[i*api_usage_limit_per_minute : min((i+1)*api_usage_limit_per_minute, total_number_of_stocks)]]
         group = asyncio.gather(*tasks)
         batch_results = loop.run_until_complete(group)
-        time_module.sleep(60)
+        # time_module.sleep(60)
+        time_module.sleep(0.05)
         all_results = all_results + batch_results
     loop.close()
 

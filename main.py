@@ -23,20 +23,19 @@ tickers = get_sp500_list()
 
 adjusted_tickers = [elem for elem in tickers if elem != 'GOOG' and elem != 'DUK' and elem != 'HLT' and elem != 'DD' and elem != 'CMCSA' and elem != 'COG' and elem != 'WBA' and elem != 'KMX' and elem != 'ADP' and elem != 'STZ' and elem != 'IQV'] # there were stock splits
 adjusted_tickers = [elem for elem in adjusted_tickers if '.' not in elem]
-adjusted_tickers = adjusted_tickers + ['SPY']
+adjusted_tickers = adjusted_tickers + ['SPY', 'QQQ', 'IWM']
 # yahoo finance screener - mega caps only, tech, energey and finance
 # adjusted_tickers = ['FB', 'AAPL', 'NFLX', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'BAC', 'C', 'TWTR', 'MA', 'TSM', 'V', 'JPM', 'NVDA', 'XOM', 'CVX']
 # adjusted_tickers = adjusted_tickers[378:500] # in the middle - missing
 # adjusted_tickers = adjusted_tickers[:250] # from beginning
-# adjusted_tickers = ['AAPL', 'FB', 'SPY']
+# adjusted_tickers = ['QQQ', 'SPY', 'IWM']
 
 stocks_dict = get_data_dict_for_multiple_stocks(adjusted_tickers, time)
-spy_df = stocks_dict['SPY']
+# spy_df = stocks_dict['SPY']
 
 # stocks_dict, adjusted_tickers = get_data_dict_for_all_stocks_in_directory('stocks_csvs_new')
-# adjusted_tickers = less_tickers
-# stocks_dict = { your_key: stocks_dict[your_key] for your_key in less_tickers }
 
+# stocks_dict = { tick: stocks_dict[tick].iloc[-(252*4):].reset_index(drop=True) for tick in adjusted_tickers }
 
 for ticker in adjusted_tickers:
     if ticker not in stocks_dict:
@@ -45,14 +44,22 @@ for ticker in adjusted_tickers:
 all_stocks_data_df = pd.DataFrame()
 all_stocks_data_df['ticker'] = adjusted_tickers
 
+start = time.time()
+
 for ticker in adjusted_tickers:
     stocks_dict[ticker]['10_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 10)
     stocks_dict[ticker]['20_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 20)
     stocks_dict[ticker]['50_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 50)
     stocks_dict[ticker]['200_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'Close', 200)
-    stocks_dict[ticker]['ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 20)
-    stocks_dict[ticker]['beta'] = get_beta_column(stocks_dict[ticker], spy_df, 100)
-    stocks_dict[ticker]['10_beta_ma'] = get_ma_column_for_stock(stocks_dict[ticker], 'beta', 10)
+    stocks_dict[ticker]['10_ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 10)
+    stocks_dict[ticker]['20_ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 20)
+    stocks_dict[ticker]['50_ma_volume'] = get_ma_column_for_stock(stocks_dict[ticker], 'Volume', 50)
+    stocks_dict[ticker]['10_beta_SPY'] = get_beta_column(stocks_dict[ticker], stocks_dict['SPY'], 10)
+    stocks_dict[ticker]['50_beta_SPY'] = get_beta_column(stocks_dict[ticker], stocks_dict['SPY'], 50)
+    # stocks_dict[ticker]['10_beta_QQQ'] = get_beta_column(stocks_dict[ticker], stocks_dict['QQQ'], 10)
+    # stocks_dict[ticker]['50_beta_QQQ'] = get_beta_column(stocks_dict[ticker], stocks_dict['QQQ'], 50)
+    # stocks_dict[ticker]['10_beta_IWM'] = get_beta_column(stocks_dict[ticker], stocks_dict['IWM'], 10)
+    # stocks_dict[ticker]['50_beta_IWM'] = get_beta_column(stocks_dict[ticker], stocks_dict['IWM'], 50)
     stocks_dict[ticker]['median'] = (stocks_dict[ticker]['High'] + stocks_dict[ticker]['Low']) / 2
     stocks_dict[ticker]['ma_med_5'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 5)
     stocks_dict[ticker]['ma_med_34'] = get_ma_column_for_stock(stocks_dict[ticker], 'median', 34)
@@ -90,6 +97,9 @@ for ticker in adjusted_tickers:
     stocks_dict[ticker].to_csv(f'stocks_csvs_new/{ticker}_engineered.csv', index=False)
     # stocks_dict[ticker].tail(1000).plot(x="Date", y=["Close", "50_ma"])
     # plt.show()
+
+end = time.time()
+print(f'time for processing all stocks: {end - start}')
 
 # add data to some whole stocks data df
 all_stocks_data_df['average_action_p_l'] = ''
@@ -201,23 +211,46 @@ def unlock_pocket(pocket_list, ticker, pct_gains):
     # return pocket_list
 
 
+def get_correls_on_norm_columns(df, cols):
+    copied_df = df.copy()
+    corr_dict = {}
+    copied_df = copied_df.replace(r'^\s*$', np.NaN, regex=True)
+    for col in cols:
+        corr_dict[f'{col}_norm'] = copied_df['action_return_on_signal_index'].fillna(0).astype(float).corr(copied_df[f'{col}_norm'].fillna(0).astype(float))
+    print(f'correlations with action return on signal index summary: {corr_dict}')
+
+    # TODO: winning keys should be calculated on an automated monthly basis and pushed to a db, pulled in orders_notifier (taking into account preventing overfitting and less correlated features)
+    winning_keys = ['50_beta_SPY_norm', 'median_ratio_norm', 'ma_med_34_ratio_norm', 'awesome_osc_norm',
+                    'distance_from_10_ma_norm', 'rsi_norm', 'stochastic_k_norm', 'atr_volatility_norm']
+    winning_corr_dict = {winning_key: corr_dict[winning_key] for winning_key in winning_keys}
+    return winning_corr_dict
+
+
 all_actions_df['pocket_amount'] = ''
 all_actions_df['pocket_index'] = ''
 all_actions_df['total_pockets_value'] = ''
 all_actions_df['position_score'] = ''
+all_actions_df['highest_score_for_day'] = ''
 all_actions_df = all_actions_df.sort_values(by=['Date'])
 all_actions_df = all_actions_df.reset_index(drop=True)
-all_actions_df = normalize_columns(all_actions_df, ['Volume', 'ma_volume', 'median_ratio', 'ma_med_5_ratio', 'ma_med_34_ratio', 'awesome_osc',
-                            'macd', 'macd_signal', 'distance_from_10_ma', 'adx', '+di', '-di', 'rsi', 'stochastic_k',
-                            'stochastic_d', 'atr_volatility', 'atr_volatility_ma'])
-all_actions_df = calculate_correl_score_series_for_df(all_actions_df)
+columns_to_normalize = ['Volume', '10_ma_volume', '20_ma_volume', '50_ma_volume',
+                                                    '10_beta_SPY', '50_beta_SPY', 'median_ratio', 'ma_med_5_ratio',
+                                                    'ma_med_34_ratio', 'awesome_osc','macd', 'macd_signal',
+                                                    'distance_from_10_ma', 'adx', '+di', '-di', 'rsi', 'stochastic_k',
+                                                    'stochastic_d', 'atr_volatility', 'atr_volatility_ma']
+all_actions_df = normalize_columns(all_actions_df, columns_to_normalize)
+
 only_entrances_df = all_actions_df.copy()[all_actions_df['action_return_on_signal_index'] != '']
+correls_dict = get_correls_on_norm_columns(only_entrances_df, columns_to_normalize)
+
+only_entrances_df = calculate_correl_score_series_for_df(only_entrances_df, correls_dict)
 total_actions_before_one_per_day = len(only_entrances_df)
 # TODO: comment out this section only to calculate correl again >>
-best_position_ids = only_entrances_df.sort_values('position_score_norm', ascending=False).drop_duplicates(['Date']).sort_values(['Date']).reset_index(drop=True)['position_id']
-all_actions_df = all_actions_df[all_actions_df['position_id'].isin(best_position_ids)]
-all_actions_df = all_actions_df.sort_values(by=['Date'])
-all_actions_df = all_actions_df.reset_index(drop=True)
+best_position_ids = only_entrances_df.sort_values('position_score', ascending=False).drop_duplicates(['Date']).sort_values(['Date']).reset_index(drop=True)['position_id']
+only_entrances_df['highest_score_for_day'] = only_entrances_df['position_id'].isin(best_position_ids)
+# all_actions_df = all_actions_df[all_actions_df['position_id'].isin(best_position_ids)]
+# all_actions_df = all_actions_df.sort_values(by=['Date'])
+# all_actions_df = all_actions_df.reset_index(drop=True)
 # TODO: << comment out this section only to calculate correl again
 for row in range(len(all_actions_df)):
     if all_actions_df.at[row, 'signal'] != '':
@@ -231,7 +264,7 @@ for row in range(len(all_actions_df)):
     print(all_actions_df.at[row, 'Date'])
     print(pocket_list)
 
-all_actions_df = all_actions_df[all_actions_df['action_return_on_signal_index'] != '']
+all_actions_df = only_entrances_df
 # TODO: comment out to not show correl plots >>
 # all_actions_df['correct'] = all_actions_df['action_return_on_signal_index'] > 0.006
 # classes = all_actions_df['correct']

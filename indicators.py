@@ -202,9 +202,6 @@ def roll(df, w):
 
 
 def beta(df, benchmark_col_name):
-    # If the market values are not passed,
-    # I'll assume they are located in a column
-    # named 'Market'.  If not, this will fail.
     market = df[benchmark_col_name]
     X = market.values.reshape(-1, 1)
     X = np.concatenate([np.ones_like(X), X], axis=1)
@@ -213,11 +210,9 @@ def beta(df, benchmark_col_name):
 
 
 def get_beta_column(stock_df, benchmark_df, period):
-    stock_df['benchmark_close'] = benchmark_df['Close']
-    stock_df = stock_df[['Close', 'benchmark_close']]
-    betas = pd.concat([beta(sdf, 'benchmark_close') for sdf in roll(stock_df.pct_change().dropna(), period)], axis=1).T
-    stock_df['Beta'] = betas['Close']
-    return stock_df['Beta']
+    df = pd.concat([benchmark_df['Close'], stock_df['Close']], axis=1, keys=['benchmark_close', 'Close'])
+    betas = pd.concat([beta(sdf, 'benchmark_close') for sdf in roll(df.pct_change().dropna(), period)], axis=1).T
+    return betas['Close']
 
 
 def normalize_columns(df, columns_list):

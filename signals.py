@@ -128,7 +128,7 @@ def awesome_oscilator(stock_df, signal_direction_column, signal_type_column):
     df = stock_df.copy()
     for i in range(len(df)):
         if i > 100:
-            if df['awesome_osc'][i] > 0 and df['awesome_osc'][i-1] <= 0 and df['awesome_osc'][i-7] <= 0 and check_awesome_osc_twin_peaks_in_negative_zone(df, i, 80):
+            if df['awesome_osc'][i] > 0 and (df.loc[i-7 : i-1, 'awesome_osc'] < 0).all() and check_awesome_osc_twin_peaks_in_negative_zone(df, i, 80):
                 df.at[i, signal_direction_column] = 'positive'
                 df.at[i, signal_type_column] = 'awesome_osc'
             # elif df['awesome_osc'][i] < 0 and df['awesome_osc'][i-1] >= 0 and check_awesome_osc_twin_peaks_in_positive_zone(df, i, 80):
@@ -279,21 +279,27 @@ def check_trend_not_up(df, i):
     return check_column_trend(df, 'stochastic_k', i) != 'UP'
 
 
-def calculate_correl_score_series_for_df(df):
-    for i in range(len(df)):
-        if df.at[i, 'signal_type'] == 'awesome_osc':
-            df.at[i, 'position_score'] = df.at[i, 'median_ratio_norm']*0.0992+df.at[i, 'awesome_osc_norm']*0.0833+df.at[i, 'adx_norm']*-0.0598+df.at[i, 'atr_volatility_norm']*0.1443
-        elif df.at[i, 'signal_type'] == 'joint_20' or df.at[i, 'signal_type'] == 'joint_50':
-            df.at[i, 'position_score'] = df.at[i, 'median_ratio_norm']*0.054+df.at[i, 'atr_volatility_ma_norm']*-0.0417+df.at[i, 'adx_norm']*0.0465+df.at[i, 'adx_ma_med_5_rat']*-0.0878
-        elif df.at[i, 'signal_type'] == 'cumulative_rsi':
-            df.at[i, 'position_score'] = df.at[i, 'ma_med_5_ratio_norm']*0.0922
-    # TODO: I should normalize all position scores to be on a scale of -1 to 1 between themselves, so that they are on the same scale between the different signals, and not having one signal that is always greater only because it has stronger correlation with one or two features
-    # TODO: so separate the position_score series by signals, normalize -1 to 1 for each signal series separately, and then join together.
-    df_awesome_normalized_position_score = normalize_columns(df[df['signal_type'] == 'awesome_osc'], ['position_score'])
-    # df_joint_20_normalized_position_score = normalize_columns(df[df['signal_type'] == 'joint_20'], ['position_score'])
-    # df_joint_50_normalized_position_score = normalize_columns(df[df['signal_type'] == 'joint_50'], ['position_score'])
-    # df_cumulative_rsi_normalized_position_score = normalize_columns(df[df['signal_type'] == 'cumulative_rsi'], ['position_score'])
-    # df_merged = pd.concat([df_awesome_normalized_position_score, df_joint_20_normalized_position_score, df_joint_50_normalized_position_score, df_cumulative_rsi_normalized_position_score])
-    df_merged = pd.concat([df_awesome_normalized_position_score])
-    return df_merged
+def calculate_correl_score_series_for_df(df, correls_dict):
+    # for i in range(len(df)):
+    #     if df.at[i, 'signal_type'] == 'awesome_osc':
+    #         df.at[i, 'position_score'] = df.at[i, 'median_ratio_norm']*0.0992+df.at[i, 'awesome_osc_norm']*0.0833+df.at[i, 'adx_norm']*-0.0598+df.at[i, 'atr_volatility_norm']*0.1443
+    #     elif df.at[i, 'signal_type'] == 'joint_20' or df.at[i, 'signal_type'] == 'joint_50':
+    #         df.at[i, 'position_score'] = df.at[i, 'median_ratio_norm']*0.054+df.at[i, 'atr_volatility_ma_norm']*-0.0417+df.at[i, 'adx_norm']*0.0465+df.at[i, 'adx_ma_med_5_rat']*-0.0878
+    #     elif df.at[i, 'signal_type'] == 'cumulative_rsi':
+    #         df.at[i, 'position_score'] = df.at[i, 'ma_med_5_ratio_norm']*0.0922
+    # # TODO: I should normalize all position scores to be on a scale of -1 to 1 between themselves, so that they are on the same scale between the different signals, and not having one signal that is always greater only because it has stronger correlation with one or two features
+    # # TODO: so separate the position_score series by signals, normalize -1 to 1 for each signal series separately, and then join together.
+    # df_awesome_normalized_position_score = normalize_columns(df[df['signal_type'] == 'awesome_osc'], ['position_score'])
+    # # df_joint_20_normalized_position_score = normalize_columns(df[df['signal_type'] == 'joint_20'], ['position_score'])
+    # # df_joint_50_normalized_position_score = normalize_columns(df[df['signal_type'] == 'joint_50'], ['position_score'])
+    # # df_cumulative_rsi_normalized_position_score = normalize_columns(df[df['signal_type'] == 'cumulative_rsi'], ['position_score'])
+    # # df_merged = pd.concat([df_awesome_normalized_position_score, df_joint_20_normalized_position_score, df_joint_50_normalized_position_score, df_cumulative_rsi_normalized_position_score])
+    # df_merged = pd.concat([df_awesome_normalized_position_score])
+
+    for key, value in correls_dict.items():
+        if df['position_score'].any() != '':
+            df['position_score'] = df[key] * value + df['position_score']
+        else:
+            df['position_score'] = df[key] * value
+    return df
 
